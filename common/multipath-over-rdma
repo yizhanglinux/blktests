@@ -100,6 +100,7 @@ rdma_network_interfaces() {
 	(
 		cd /sys/class/net &&
 			for i in *; do
+				[ "$i" = "bonding_masters" ] && continue
 				[ -e "$i" ] || continue
 				# Skip IPoIB (ARPHRD_INFINIBAND) network
 				# interfaces.
@@ -434,6 +435,7 @@ start_soft_rdma() {
 		(
 			cd /sys/class/net &&
 				for i in *; do
+					[ "$i" = "bonding_masters" ] && continue
 					[ -e "$i" ] || continue
 					[ -e "/sys/class/infiniband/${i}_siw" ] && continue
 					rdma link add "${i}_siw" type siw netdev "$i" ||
@@ -445,6 +447,7 @@ start_soft_rdma() {
 		(
 			cd /sys/class/net &&
 				for i in *; do
+					[ "$i" = "bonding_masters" ] && continue
 					if [ -e "$i" ] && ! has_rdma_rxe "$i"; then
 						echo "$i" > /sys/module/rdma_rxe/parameters/add ||
 							echo "Failed to bind the rdma_rxe driver to $i"
