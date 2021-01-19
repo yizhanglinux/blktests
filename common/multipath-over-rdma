@@ -79,17 +79,24 @@ is_number() {
 # Check whether a device is an RDMA device. An example argument:
 # /sys/devices/pci0000:00/0000:00:03.0/0000:04:00.0
 is_rdma_device() {
-	local d i inode1 inode2
+	local d i f inode1 inode2
 
-	inode1=$(stat -c %i "$1")
-	# echo "inode1 = $inode1"
+	f=$1
+	inode1=$(stat -c %i "$f")
 	for i in /sys/class/infiniband/*; do
 		d=/sys/class/infiniband/"$(readlink "$i")"
-		d=$(dirname "$(dirname "$d")")
-		inode2=$(stat -c %i "$d")
-		# echo "inode2 = $inode2"
-		if [ "$inode1" = "$inode2" ]; then
-			return
+		if [[ "$d" == *"virtual"* ]]; then
+			if [[ -e "$d/parent" && "${f%%/*}" == "$(<"$d"/parent)" ]] || \
+				   [[ "${f%%/*}_siw" == "$(basename "$d")" ]]; then
+				return
+			fi
+		else
+			d1=$(dirname "$(dirname "$d")")
+			inode2=$(stat -c %i "$d1")
+			# echo "inode2 = $inode2"
+			if [ "$inode1" = "$inode2" ]; then
+				return
+			fi
 		fi
 	done
 	false
