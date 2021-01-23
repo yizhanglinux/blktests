@@ -377,6 +377,7 @@ all_primary_gids() {
 	local gid p
 
 	for p in /sys/class/infiniband/*/ports/*/gids/0; do
+		[[ "$p" == *"mlx"* ]] && continue
 		gid="$(<"$p")"
 		[ "$gid" != 0000:0000:0000:0000:0000:0000:0000:0000 ] &&
 			echo "$gid"
