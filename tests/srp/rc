@@ -226,6 +226,7 @@ log_in() {
 
 	for ((i=0;i<10;i++)); do
 		for p in /sys/class/infiniband/*/ports/*; do
+			[[ "$p" == *"mlx"* ]] && continue
 			[ -e "$p" ] || continue
 			port=$(basename "$p")
 			ibdev=$(basename "$(dirname "$(dirname "$p")")")
@@ -478,6 +479,7 @@ start_lio_srpt() {
 	done
 	echo "target_ids=${target_ids[*]}" >>"$FULL"
 	for p in /sys/class/infiniband/*/ports/*; do
+		[[ "$p" == *"mlx"* ]] && continue
 		[ -e "$p" ] || continue
 		gid=$(<"$p/gids/0")
 		if [ "${gid#fe8}" != "$gid" ]; then
