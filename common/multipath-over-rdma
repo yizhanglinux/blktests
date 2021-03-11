@@ -406,6 +406,7 @@ start_soft_rdma() {
 	(
 		cd /sys/class/net &&
 			for i in *; do
+				[ "$i" = "bonding_masters" ] && continue
 				[ -e "$i" ] || continue
 				[ "$i" = "lo" ] && continue
 				[ "$(<"$i/addr_len")" = 6 ] || continue
