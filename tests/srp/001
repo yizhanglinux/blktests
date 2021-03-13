@@ -9,15 +9,16 @@ QUICK=1
 
 # Count the number of LUNs created by start_srpt() from the initiator side.
 count_luns() {
-	local h luns=0 p
+	local h luns p
 
 	for p in /sys/class/srp_remote_ports/*; do
+		luns=0
 		[ -e "$p" ] || continue
 		h="${p##*/}"; h="${h#port-}"; h="${h%:1}";
 		for d in "/sys/class/scsi_device/${h}:"*; do
 			[ -e "$d" ] && ((luns++))
 		done
-		[ "$luns" -gt 0 ] && break
+		[ "$luns" -ge ${#vdev_path[@]} ] && break
 	done
 	echo "$luns"
 }
