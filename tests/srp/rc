@@ -220,8 +220,8 @@ log_in() {
 
 	for ((i=0;i<10;i++)); do
 		for p in /sys/class/infiniband/*/ports/*; do
-			[[ "$p" == *"mlx"* ]] && continue
 			[ -e "$p" ] || continue
+			[[ "$p" =~ mlx|/ib ]] && continue
 			port=$(basename "$p")
 			ibdev=$(basename "$(dirname "$(dirname "$p")")")
 			link_layer=$(<"$p/link_layer")
@@ -473,8 +473,8 @@ start_lio_srpt() {
 	done
 	echo "target_ids=${target_ids[*]}" >>"$FULL"
 	for p in /sys/class/infiniband/*/ports/*; do
-		[[ "$p" == *"mlx"* ]] && continue
 		[ -e "$p" ] || continue
+		[[ "$p" =~ mlx|/ib ]] && continue
 		gid=$(<"$p/gids/0")
 		if [ "${gid#fe8}" != "$gid" ]; then
 			gid=${gid#fe80:0000:0000:0000:}
