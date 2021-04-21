@@ -218,7 +218,7 @@ log_in() {
 
 	ioc_guid=$(</sys/module/ib_srpt/parameters/srpt_service_guid)
 
-	for ((i=0;i<10;i++)); do
+	for ((i=0;i<20;i++)); do
 		for p in /sys/class/infiniband/*/ports/*; do
 			[ -e "$p" ] || continue
 			[[ "$p" =~ mlx|/ib ]] && continue
