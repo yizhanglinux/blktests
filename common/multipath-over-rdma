@@ -324,7 +324,7 @@ get_bdev_n() {
 		then
 			break
 		fi
-		echo reconfigure | multipathd -k >&/dev/null
+		multipath &>>"$FULL"
 		sleep .1
 	done
 	if [ -z "$dev" ] || [ ! -e "$dev" ]; then
