@@ -406,6 +406,7 @@ start_soft_rdma() {
 	(
 		cd /sys/class/net &&
 			for i in *; do
+				[[ "$i" =~ gretap0|erspan0 ]] && continue
 				[ "$i" = "bonding_masters" ] && continue
 				[ -e "$i" ] || continue
 				[ "$i" = "lo" ] && continue
