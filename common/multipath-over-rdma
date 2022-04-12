@@ -377,7 +377,7 @@ all_primary_gids() {
 	local gid p
 
 	for p in /sys/class/infiniband/*/ports/*/gids/0; do
-		[[ "$p" =~ mlx|qedr ]] && continue
+		[[ "$p" =~ mlx|qedr|bnxt_re ]] && continue
 		gid="$(<"$p")"
 		[ "$gid" != 0000:0000:0000:0000:0000:0000:0000:0000 ] &&
 			echo "$gid"
@@ -427,7 +427,7 @@ stop_soft_rdma() {
 	rdma link |
 		sed -n 's,^link[[:blank:]]*\([^/]*\)/.* netdev .*,\1,p' |
 		while read -r i; do
-		      [[ "$i" =~ roce|mlx|qedr ]] && continue
+		      [[ "$i" =~ roce|mlx|qedr|bnxt_re ]] && continue
 		      echo "$i ..."
 		      rdma link del "${i}" || echo "Failed to remove ${i}"
 		done
