@@ -81,7 +81,7 @@ is_number() {
 
 # Lists RDMA capable network interface names, e.g. ib0 ib1.
 rdma_network_interfaces() {
-	rdma link show | grep -v "DOWN" |
+	rdma link show | grep -Ev "DOWN|mlx" |
 		sed -n 's/^.*[[:blank:]]netdev[[:blank:]]\+\([^[:blank:]]*\)[[:blank:]]*/\1/p' |
 		sort -u
 }
