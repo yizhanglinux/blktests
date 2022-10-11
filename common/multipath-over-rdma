@@ -388,7 +388,7 @@ all_primary_gids() {
 # Check whether or not an rdma_rxe or siw instance has been associated with
 # network interface $1.
 has_soft_rdma() {
-	rdma link | grep -q " netdev $1[[:blank:]]*\$"
+	rdma link | grep -q "link $1.*netdev $1[[:blank:]]*\$"
 }
 
 # Load the rdma_rxe or siw kernel module and associate it with all network
