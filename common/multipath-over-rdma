@@ -92,7 +92,7 @@ is_number() {
 
 # Lists RDMA capable network interface names, e.g. ib0 ib1.
 rdma_network_interfaces() {
-	rdma link show | grep -Ev "DOWN|mlx" |
+	rdma link show | grep -Ev "DOWN|mlx|irdma" |
 		sed -n 's/^.*[[:blank:]]netdev[[:blank:]]\+\([^[:blank:]]*\)[[:blank:]]*/\1/p' |
 		sort -u
 }
@@ -429,7 +429,7 @@ stop_soft_rdma() {
 	rdma link |
 		sed -n 's,^link[[:blank:]]*\([^/]*\)/.* netdev .*,\1,p' |
 		while read -r i; do
-		      [[ "$i" =~ roce|mlx|qedr|bnxt_re ]] && continue
+		      [[ "$i" =~ roce|mlx|qedr|bnxt_re|irdma ]] && continue
 		      echo "$i ..."
 		      rdma link del "${i}" || echo "Failed to remove ${i}"
 		done
