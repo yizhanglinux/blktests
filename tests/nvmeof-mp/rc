@@ -26,6 +26,10 @@ group_requires() {
 
 	_have_configfs || return
 
+	_have_driver scsi_dh_alua
+	_have_driver scsi_dh_emc
+	_have_driver scsi_dh_rdac
+
 	_have_module dm_multipath
 	_have_module dm_queue_length
 	_have_module dm_service_time
@@ -36,9 +40,6 @@ group_requires() {
 	_have_module nvme-rdma
 	_have_module nvmet-rdma
 	_have_module rdma_rxe
-	_have_module scsi_dh_alua
-	_have_module scsi_dh_emc
-	_have_module scsi_dh_rdac
 
 	for p in mkfs.ext4 mkfs.xfs multipath multipathd pidof rdma fio; do
 		_have_program "$p" || return
