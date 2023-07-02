@@ -261,7 +261,7 @@ log_out() {
 
 	if [ -e /sys/class/srp_remote_ports ]; then
 		for p in /sys/class/srp_remote_ports/*; do
-			[ -e "$p" ] && echo 1 >"$p/delete" &
+			[ -e "$p/delete" ] && echo 1 >"$p/delete" &
 		done
 	fi
 	wait
@@ -343,6 +343,7 @@ stop_srp_ini() {
 		echo "Error: unloading kernel module ib_srp failed"
 		return 1
 	fi
+	lsmod | grep -q "scsi_transport_srp.*ibmvscsi" && return
 	_unload_module scsi_transport_srp || return $?
 }
 
