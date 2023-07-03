@@ -24,6 +24,8 @@ group_requires() {
 		return
 	fi
 
+	unset SKIP_REASONS
+
 	_have_configfs || return
 
 	_have_driver scsi_dh_alua
