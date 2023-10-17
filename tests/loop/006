@@ -68,5 +68,7 @@ test() {
 	fi
 	losetup -d "$loop_dev"
 
+	rmmod loop
+
 	echo "Test complete"
 }
