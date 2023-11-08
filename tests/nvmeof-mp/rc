@@ -41,7 +41,11 @@ group_requires() {
 	_have_module ib_umad
 	_have_module nvme-rdma
 	_have_module nvmet-rdma
-	_have_module rdma_rxe
+	if [ -n "$use_rxe" ]; then
+		_have_module rdma_rxe
+	else
+		_have_module siw
+	fi
 
 	for p in mkfs.ext4 mkfs.xfs multipath multipathd pidof rdma fio; do
 		_have_program "$p" || return
