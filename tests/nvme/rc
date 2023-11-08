@@ -30,7 +30,11 @@ _nvme_requires() {
 		_have_modules nvmet nvme-core nvme-rdma nvmet-rdma
 		_have_configfs
 		_have_program rdma
-		_have_modules rdma_rxe || _have_modules siw
+		if [ -n "$use_rxe" ]; then
+			_have_modules rdma_rxe
+		else
+			_have_modules siw
+		fi
 		;;
 	*)
 		SKIP_REASON="unsupported nvme_trtype=${nvme_trtype}"

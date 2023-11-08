@@ -35,7 +35,6 @@ and multipathing has been enabled in the nvme_core kernel module"
 		ib_umad
 		nvme-rdma
 		nvmet-rdma
-		rdma_rxe
 		scsi_dh_alua
 		scsi_dh_emc
 		scsi_dh_rdac
