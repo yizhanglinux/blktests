@@ -46,7 +46,6 @@ group_requires() {
 		ib_uverbs
 		null_blk
 		rdma_cm
-		rdma_rxe
 		scsi_debug
 		scsi_dh_alua
 		scsi_dh_emc
