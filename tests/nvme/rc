@@ -130,9 +130,9 @@ _cleanup_nvmet() {
 	trap SIGINT
 
 	modprobe -r nvme-"${nvme_trtype}" 2>/dev/null
-	if [[ "${nvme_trtype}" != "loop" ]]; then
-		modprobe -r nvmet-"${nvme_trtype}" 2>/dev/null
-	fi
+#	if [[ "${nvme_trtype}" != "loop" ]]; then
+#		modprobe -r nvmet-"${nvme_trtype}" 2>/dev/null
+#	fi
 	modprobe -r nvmet 2>/dev/null
 	if [[ "${nvme_trtype}" == "rdma" ]]; then
 		stop_soft_rdma
