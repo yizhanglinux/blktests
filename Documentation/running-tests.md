@@ -113,10 +113,9 @@ The NVMe tests can be additionally parameterized via environment variables.
   block device types can be listed with separating spaces. In this case, the
   tests are repeated to cover all of the block device types specified. Default
   value is "device file".
-- NVME_IMG_SIZE: '1G' (default)
-  Run the tests with given image size in bytes. 'm', 'M', 'g' and 'G' postfix
-  are supported. This parameter had an old name 'nvme_img_size'. The old name
-  is still usable, but not recommended.
+- nvme_img_size: '1G' (default)
+  Run the tests with given image size in bytes. 'm', 'M', 'g'
+	and 'G' postfix are supported.
 - nvme_num_iter: 1000 (default)
   The number of iterations a test should do.
 
