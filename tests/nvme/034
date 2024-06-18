@@ -14,10 +14,6 @@ requires() {
 	_have_fio
 }
 
-set_conditions() {
-	_set_nvme_trtype "$@"
-}
-
 test_device() {
 	echo "Running ${TEST_NAME}"
 

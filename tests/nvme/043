@@ -20,9 +20,6 @@ requires() {
 	_have_driver dh_generic
 }
 
-set_conditions() {
-	_set_nvme_trtype "$@"
-}
 
 test() {
 	echo "Running ${TEST_NAME}"

@@ -17,10 +17,6 @@ requires() {
 	_have_writeable_kmsg
 }
 
-set_conditions() {
-	_set_nvme_trtype "$@"
-}
-
 test() {
 	echo "Running ${TEST_NAME}"
 

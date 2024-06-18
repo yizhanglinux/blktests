@@ -17,10 +17,6 @@ requires() {
 	_have_kver 4 21
 }
 
-set_conditions() {
-	_set_nvme_trtype "$@"
-}
-
 test() {
 	echo "Running ${TEST_NAME}"
 
