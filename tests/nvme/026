@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: GPL-2.0+
 # Copyright (c) 2017-2018 Western Digital Corporation or its affiliates.
 #
-# Test NVMe ns-descs command.
+# Test NVMe ns-descs command on NVMeOF with a file-backed ns.
 
 . tests/nvme/rc
 
-DESCRIPTION="test NVMe ns-descs"
+DESCRIPTION="test NVMe ns-descs command on NVMeOF file-backed ns"
 QUICK=1
 
 requires() {
@@ -16,7 +16,7 @@ requires() {
 }
 
 set_conditions() {
-	_set_combined_conditions _set_nvme_trtype _set_nvmet_blkdev_type "$@"
+	_set_nvme_trtype "$@"
 }
 
 test() {
@@ -26,7 +26,7 @@ test() {
 
 	local ns
 
-	_nvmet_target_setup
+	_nvmet_target_setup --blkdev file
 
 	_nvme_connect_subsys
 
