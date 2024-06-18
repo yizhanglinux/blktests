@@ -23,7 +23,7 @@ test() {
 	_setup_nvmet
 
 	local port
-	local iterations="${NVME_NUM_ITER}"
+	local iterations="${nvme_num_iter}"
 
 	truncate -s "${NVME_IMG_SIZE}" "$(_nvme_def_file_path)"
 
