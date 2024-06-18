@@ -18,9 +18,8 @@ install:
 SHELLCHECK_EXCLUDE := SC2119
 
 check:
-	shellcheck -x -e $(SHELLCHECK_EXCLUDE) -f gcc check common/* \
+	shellcheck -x -e $(SHELLCHECK_EXCLUDE) -f gcc check new common/* \
 		tests/*/rc tests/*/[0-9]*[0-9] src/*.sh
-	shellcheck --exclude=$(SHELLCHECK_EXCLUDE),SC2154 --format=gcc new
 	! grep TODO tests/*/rc tests/*/[0-9]*[0-9]
 	! find -name '*.out' -perm /u=x+g=x+o=x -printf '%p is executable\n' | grep .
 
