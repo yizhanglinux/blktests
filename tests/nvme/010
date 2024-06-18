@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: GPL-2.0+
 # Copyright (c) 2017-2018 Western Digital Corporation or its affiliates.
 #
-# This is a data verification test.
+# This is a data verification test for block device backed ns.
 
 . tests/nvme/rc
 
-DESCRIPTION="run data verification fio job"
+DESCRIPTION="run data verification fio job on NVMeOF block device-backed ns"
 TIMED=1
 
 requires() {

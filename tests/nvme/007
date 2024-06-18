@@ -2,21 +2,20 @@
 # SPDX-License-Identifier: GPL-2.0+
 # Copyright (c) 2017-2018 Western Digital Corporation or its affiliates.
 #
-# Test NVMeOF target creation with a block device backed ns.
+# Test NVMeOF target creation with a file backed ns.
 
 . tests/nvme/rc
 
-DESCRIPTION="create an NVMeOF target with a block device-backed ns"
+DESCRIPTION="create an NVMeOF target with a file-backed ns"
 QUICK=1
 
 requires() {
 	_nvme_requires
-	_have_loop
 	_require_nvme_trtype_is_fabrics
 }
 
 set_conditions() {
-	_set_combined_conditions _set_nvme_trtype _set_nvmet_blkdev_type "$@"
+	_set_nvme_trtype "$@"
 }
 
 test() {
@@ -24,7 +23,7 @@ test() {
 
 	_setup_nvmet
 
-	_nvmet_target_setup
+	_nvmet_target_setup --blkdev file
 
 	_nvmet_target_cleanup
 

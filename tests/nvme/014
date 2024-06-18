@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: GPL-2.0+
 # Copyright (c) 2017-2018 Western Digital Corporation or its affiliates.
 #
-# Test NVMeOF flush command from host.
+# Test NVMeOF flush command from host with a block device backed ns.
 
 . tests/nvme/rc
 
-DESCRIPTION="flush a command from host"
+DESCRIPTION="flush a NVMeOF block device-backed ns"
 QUICK=1
 
 requires() {

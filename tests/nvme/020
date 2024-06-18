@@ -2,21 +2,20 @@
 # SPDX-License-Identifier: GPL-2.0+
 # Copyright (c) 2017-2018 Western Digital Corporation or its affiliates.
 #
-# Test NVMe smart-log command on NVMeOF with a block-device ns.
+# Test NVMe DSM Discard command on NVMeOF with a file-backed ns.
 
 . tests/nvme/rc
 
-DESCRIPTION="test NVMe smart-log command on NVMeOF block-device ns"
+DESCRIPTION="test NVMe DSM Discard command on NVMeOF file-backed ns"
 QUICK=1
 
 requires() {
 	_nvme_requires
-	_have_loop
 	_require_nvme_trtype_is_fabrics
 }
 
 set_conditions() {
-	_set_combined_conditions _set_nvme_trtype _set_nvmet_blkdev_type "$@"
+	_set_nvme_trtype "$@"
 }
 
 test() {
@@ -25,18 +24,19 @@ test() {
 	_setup_nvmet
 
 	local ns
+	local nblk_range="10,10,10,10,10,10,10,10,10,10"
+	local sblk_range="100,200,300,400,500,600,700,800,900,1000"
 
-	_nvmet_target_setup
+	_nvmet_target_setup --blkdev file
 
 	_nvme_connect_subsys
 
 	ns=$(_find_nvme_ns "${def_subsys_uuid}")
 
-	if ! nvme smart-log "/dev/${ns}" >> "$FULL" 2>&1; then
-		echo "ERROR: smart-log bdev-ns failed"
-	fi
+	nvme dsm "/dev/${ns}" --ad \
+		--slbs "${sblk_range}" --blocks "${nblk_range}"
 
-	_nvme_disconnect_subsys >> "$FULL" 2>&1
+	_nvme_disconnect_subsys
 
 	_nvmet_target_cleanup
 

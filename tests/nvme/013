@@ -2,21 +2,24 @@
 # SPDX-License-Identifier: GPL-2.0+
 # Copyright (c) 2017-2018 Western Digital Corporation or its affiliates.
 #
-# Test NVMe smart-log command on NVMeOF with a block-device ns.
+# Test mkfs with data verification for file backed ns.
 
 . tests/nvme/rc
+. common/xfs
 
-DESCRIPTION="test NVMe smart-log command on NVMeOF block-device ns"
-QUICK=1
+DESCRIPTION="run mkfs and data verification fio job on NVMeOF file-backed ns"
+TIMED=1
 
 requires() {
 	_nvme_requires
-	_have_loop
+	_have_xfs
+	_have_fio
 	_require_nvme_trtype_is_fabrics
+	_require_nvme_test_img_size 350m
 }
 
 set_conditions() {
-	_set_combined_conditions _set_nvme_trtype _set_nvmet_blkdev_type "$@"
+	_set_nvme_trtype "$@"
 }
 
 test() {
@@ -26,17 +29,17 @@ test() {
 
 	local ns
 
-	_nvmet_target_setup
+	_nvmet_target_setup --blkdev file
 
 	_nvme_connect_subsys
 
 	ns=$(_find_nvme_ns "${def_subsys_uuid}")
 
-	if ! nvme smart-log "/dev/${ns}" >> "$FULL" 2>&1; then
-		echo "ERROR: smart-log bdev-ns failed"
+	if ! _xfs_run_fio_verify_io "/dev/${ns}"; then
+		echo "FAIL: fio verify failed"
 	fi
 
-	_nvme_disconnect_subsys >> "$FULL" 2>&1
+	_nvme_disconnect_subsys
 
 	_nvmet_target_cleanup
 
