@@ -150,7 +150,7 @@ The NVMe-TCP ZC offload tests use a couple more variables.
 - NVME_IFACE: Name of the interface the offload should be enabled on.
   This should be the same interface the NVMe connection is made with.
 
-### Running nvme-rdma and SRP tests
+### Running nvme-rdma nvmeof-mp and SRP tests
 
 These tests will use the siw (soft-iWARP) driver by default. The rdma_rxe
 (soft-RoCE) driver is also supported.
@@ -158,6 +158,7 @@ These tests will use the siw (soft-iWARP) driver by default. The rdma_rxe
 ```sh
 To use the siw driver:
 NVMET_TRTYPES=rdma ./check nvme/
+./check nvmeof-mp/
 ./check srp/
 
 To use the rdma_rxe driver:
