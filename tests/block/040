@@ -1,0 +1,73 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-2.0
+# Copyright 2025 Ming Lei <ming.lei@redhat.com>
+#
+# Most of code is copied from block/029.
+#
+# Trigger blk_mq_update_nr_hw_queues() & elevator switch. This test case
+# confirms the kernel fix commit b126d9d7475e ("block: don't allow to switch
+# elevator if updating nr_hw_queues is in-progress").
+
+. tests/block/rc
+. common/null_blk
+
+DESCRIPTION="test blk_mq_update_nr_hw_queues() vs switch elevator"
+TIMED=1
+
+requires() {
+	_have_fio
+	_have_null_blk
+}
+
+
+modify_io_sched() {
+	local deadline
+	local dev=$1
+
+	deadline=$(($(_uptime_s) + TIMEOUT))
+	while [ "$(_uptime_s)" -lt "$deadline" ]; do
+		for sched in $(_io_schedulers "$dev"); do
+			{ echo "$sched" > /sys/block/"$dev"/queue/scheduler ;} \
+				&> /dev/null
+			sleep .5
+		done
+	done
+}
+
+modify_nr_hw_queues() {
+	local deadline num_cpus
+
+	deadline=$(($(_uptime_s) + TIMEOUT))
+	num_cpus=$(nproc)
+	while [ "$(_uptime_s)" -lt "$deadline" ]; do
+		sleep .1
+		echo 1 > /sys/kernel/config/nullb/nullb1/submit_queues
+		sleep .1
+		echo "$num_cpus" > /sys/kernel/config/nullb/nullb1/submit_queues
+	done
+}
+
+test() {
+	local sq=/sys/kernel/config/nullb/nullb1/submit_queues
+
+	: "${TIMEOUT:=30}"
+	_configure_null_blk nullb1 completion_nsec=0 blocksize=512 \
+			    size=16 memory_backed=1 power=1 &&
+	if { echo 1 >$sq; } 2>/dev/null; then
+		modify_nr_hw_queues &
+		modify_io_sched nullb1 &
+		fio --rw=randwrite --bs=4K --loops=$((10**6)) \
+		    --iodepth=64 --group_reporting --sync=1 --direct=1 \
+		    --ioengine=libaio --filename="/dev/nullb1" \
+		    --runtime="${TIMEOUT}" --name=nullb1 \
+		    --output="${RESULTS_DIR}/block/fio-output-040.txt" \
+		    >>"$FULL"
+		wait
+	else
+		SKIP_REASONS+=("$sq cannot be modified")
+		_exit_null_blk
+		return
+	fi
+	_exit_null_blk
+	echo Passed
+}
