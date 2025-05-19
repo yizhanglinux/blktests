@@ -1,6 +1,6 @@
 # blktests
 
-[![Build Status](https://github.com/osandov/blktests/workflows/CI/badge.svg)](https://github.com/osandov/blktests/actions)
+[![Build Status](https://github.com/linux-blktests/blktests/workflows/CI/badge.svg)](https://github.com/linux-blktests/blktests/actions)
 
 blktests is a test framework for the Linux kernel block layer and storage
 stack. It is inspired by the [xfstests](https://git.kernel.org/pub/scm/fs/xfs/xfstests-dev.git/)
