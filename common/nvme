@@ -62,6 +62,16 @@ _require_nvme_trtype_is_fabrics() {
 	return 0
 }
 
+_have_nvme_cli_with_json_support() {
+	_have_program nvme || return $?
+
+	if ! nvme list --output-format=json &> /dev/null; then
+		SKIP_REASONS+=("nvme-cli does not support json output format")
+		return 1
+	fi
+	return 0
+}
+
 _nvme_fcloop_add_rport() {
 	local local_wwnn="$1"
 	local local_wwpn="$2"
@@ -415,7 +425,7 @@ _nvme_connect_subsys() {
 	if [[ ${concat} = true ]]; then
 		ARGS+=(--concat)
 	fi
-	ARGS+=(-o json)
+	ARGS+=(--output-format=json)
 	connect=$(nvme connect "${ARGS[@]}" 2> /dev/null)
 
 	# Wait until device file and sysfs attributes get ready
