@@ -55,7 +55,6 @@ _set_nvmet_blkdev_type() {
 }
 
 _nvme_requires() {
-	_have_program nvme
 	_require_nvme_test_img_size 4m
 	case ${nvme_trtype} in
 	loop)
@@ -123,6 +122,7 @@ group_setup() {
 group_requires() {
 	_have_root
 	_NVMET_TRTYPES_is_valid
+	_have_nvme_cli_with_json_support
 }
 
 group_device_requires() {

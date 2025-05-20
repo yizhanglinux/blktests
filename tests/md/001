@@ -26,6 +26,7 @@ requires() {
 	_have_driver dm-mod
 	_have_driver raid1
 
+	_have_nvme_cli_with_json_support
 	_require_nvme_trtype tcp
 	_have_brd
 }
