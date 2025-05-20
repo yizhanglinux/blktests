@@ -36,7 +36,8 @@ test_device() {
 	offset=$((ZONE_STARTS[zone_idx] * 512))
 	size=$((ZONE_LENGTHS[zone_idx] * 512))
 
-	blkzone reset -o "${ZONE_STARTS[zone_idx]}" "${TEST_DEV}"
+	blkzone reset --offset "${ZONE_STARTS[zone_idx]}" --count 1 \
+		"${TEST_DEV}"
 
 	_test_dev_set_scheduler deadline
 
