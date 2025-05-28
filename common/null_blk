@@ -68,7 +68,10 @@ _configure_null_blk() {
 
 	for param in "${params[@]}"; do
 		local key="${param%%=*}" val="${param#*=}"
-		echo "$val" > "$nullb_path/$key" || return 1
+		if ! echo "$val" > "$nullb_path/$key"; then
+			echo "Writing $val into $nullb_path/$key failed"
+			return 1
+		fi
 	done
 }
 
