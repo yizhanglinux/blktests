@@ -180,7 +180,7 @@ _exit_scsi_debug() {
 	udevadm settle
 
 	if _module_file_exists scsi_debug; then
-		modprobe -r scsi_debug
+		_unload_module scsi_debug 10
 		return
 	fi
 
