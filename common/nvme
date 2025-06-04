@@ -65,7 +65,7 @@ _require_nvme_trtype_is_fabrics() {
 _have_nvme_cli_with_json_support() {
 	_have_program nvme || return $?
 
-	if ! nvme list --output-format=json &> /dev/null; then
+	if ! nvme list --help 2>&1 | grep -q json; then
 		SKIP_REASONS+=("nvme-cli does not support json output format")
 		return 1
 	fi
