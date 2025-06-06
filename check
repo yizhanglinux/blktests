@@ -502,9 +502,10 @@ _check_and_call_test_device() {
 			fi
 		fi
 		RESULTS_DIR="$OUTPUT/$(basename "$TEST_DEV")""$postfix"
-		if ! _call_test test_device; then
-			ret=1
-		fi
+		# Avoid "if" and "!" for errexit in test cases
+		_call_test test_device
+		# shellcheck disable=SC2181
+		(($? != 0)) && ret=1
 		if (( unset_skip_reason )); then
 			unset SKIP_REASONS
 		fi
@@ -637,9 +638,10 @@ _run_group() {
 	local ret=0
 	local test_name
 	for test_name in "${tests[@]}"; do
-		if ! ( _run_test "$test_name" ); then
-			ret=1
-		fi
+		# Avoid "if" and "!" for errexit in test cases
+		( _run_test "$test_name" )
+		# shellcheck disable=SC2181
+		(($? != 0)) && ret=1
 	done
 	return $ret
 }
@@ -695,9 +697,10 @@ _check() {
 		if [[ $group != "$prev_group" ]]; then
 			prev_group="$group"
 			if [[ ${#tests[@]} -gt 0 ]]; then
-				if ! ( _run_group "${tests[@]}" ); then
-					ret=1
-				fi
+				# Avoid "if" and "!" for errexit in test cases
+				( _run_group "${tests[@]}" )
+				# shellcheck disable=SC2181
+				(($? != 0)) && ret=1
 				tests=()
 			fi
 		fi
@@ -705,9 +708,10 @@ _check() {
 	done < <(_find_tests "$@" | sort -zu)
 
 	if [[ ${#tests[@]} -gt 0 ]]; then
-		if ! ( _run_group "${tests[@]}" ); then
-			ret=1
-		fi
+		# Avoid "if" and "!" for errexit in test cases
+		( _run_group "${tests[@]}" )
+		# shellcheck disable=SC2181
+		(($? != 0)) && ret=1
 	fi
 
 	return $ret
