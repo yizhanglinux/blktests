@@ -153,6 +153,29 @@ _require_test_dev_is_not_nvme_multipath() {
 	return 0
 }
 
+_test_dev_has_metadata() {
+	if (( ! $(<"${TEST_DEV_SYSFS}/metadata_bytes") )); then
+		SKIP_REASONS+=("$TEST_DEV does not have metadata")
+		return 1
+	fi
+	return 0
+}
+
+_test_dev_disables_extended_lba() {
+	local flbas
+
+	if ! flbas=$(nvme id-ns "$TEST_DEV" | grep flbas | \
+			     sed --quiet 's/.*: \(.*\)/\1/p'); then
+		SKIP_REASONS+=("$TEST_DEV does not have namespace flbas field")
+		return 1
+	fi
+	if (( flbas & 0x10 )); then
+		SKIP_REASONS+=("$TEST_DEV enables NVME_NS_FLBAS_META_EXT")
+		return 1
+	fi
+	return 0
+}
+
 _require_nvme_test_img_size() {
 	local require_sz_mb
 	local nvme_img_size_mb
