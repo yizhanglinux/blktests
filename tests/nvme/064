@@ -1,0 +1,34 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2025 Keith Busch <kbusch@kernel.org>
+#
+# Test out metadata through the passthrough interfaces. This test confirms the
+# fix by the kernel commit 43a67dd812c5 ("block: flip iter directions in
+# blk_rq_integrity_map_user()"). This test requires TEST_DEV as a namespace
+# formatted with metadata, and extended LBA disabled. Such namespace can be
+# prepared with QEMU NVME emulation specifying -device option with "ms=8",
+# "ms=16" or "ms=64".
+
+. tests/nvme/rc
+
+requires() {
+	_nvme_requires
+}
+
+device_requires() {
+	_test_dev_has_metadata
+	_test_dev_disables_extended_lba
+}
+
+DESCRIPTION="exercise the nvme metadata usage with passthrough commands"
+QUICK=1
+
+test_device() {
+	echo "Running ${TEST_NAME}"
+
+	if ! src/nvme-passthrough-meta "${TEST_DEV}"; then
+		echo "src/nvme-passthrough-meta failed"
+	fi
+
+	echo "Test complete"
+}

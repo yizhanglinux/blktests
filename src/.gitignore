@@ -9,3 +9,4 @@
 /sg/syzkaller1
 /zbdioctl
 /miniublk
+/nvme-passthrough-meta
