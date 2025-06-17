@@ -1,0 +1,45 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2025 Zizhi Wo
+#
+# Test the combination of bps and iops limits under io splitting scenarios.
+# Regression test for commit d1ba22ab2bec ("blk-throttle: Prevents the bps
+# restricted io from entering the bps queue again")
+
+. tests/throtl/rc
+
+DESCRIPTION="bps limit with iops limit over io split"
+QUICK=1
+
+test() {
+	echo "Running ${TEST_NAME}"
+
+	local page_size max_secs
+	page_size=$(getconf PAGE_SIZE)
+	max_secs=$((page_size / 512))
+
+	if ! _set_up_throtl max_sectors="${max_secs}"; then
+		return 1;
+	fi
+
+	local bps_limit=$((1024 * 1024))
+	local iops_limit=1000000
+
+	# just set bps limit first
+	_throtl_set_limits wbps=$bps_limit
+	_throtl_test_io write 1M 1 &
+	_throtl_test_io write 1M 1 &
+	wait
+	_throtl_remove_limits
+
+	# set the same bps limit and a high iops limit
+	# should behave the same as no iops limit
+	_throtl_set_limits wbps=$bps_limit wiops=$iops_limit
+	_throtl_test_io write 1M 1 &
+	_throtl_test_io write 1M 1 &
+	wait
+	_throtl_remove_limits
+
+	_clean_up_throtl
+	echo "Test complete"
+}
