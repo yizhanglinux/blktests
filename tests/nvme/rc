@@ -162,6 +162,15 @@ _test_dev_has_metadata() {
 	return 0
 }
 
+_test_dev_has_no_metadata() {
+	if [ -e "${TEST_DEV_SYSFS}/metadata_bytes" ] &&
+		   (( $(<"${TEST_DEV_SYSFS}/metadata_bytes") )); then
+		SKIP_REASONS+=("$TEST_DEV has metadata")
+		return 1
+	fi
+	return 0
+}
+
 _test_dev_disables_extended_lba() {
 	local flbas
 
