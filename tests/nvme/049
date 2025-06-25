@@ -15,6 +15,15 @@ requires() {
 	_have_fio_ver 3 33
 }
 
+metadata_bytes_per_4k_io() {
+	local phys_bs md_bytes
+
+	phys_bs=$(<"${TEST_DEV_SYSFS}"/queue/physical_block_size)
+	md_bytes=$(<"${TEST_DEV_SYSFS}"/metadata_bytes)
+
+	echo $((4096 * md_bytes / phys_bs))
+}
+
 test_device() {
 	echo "Running ${TEST_NAME}"
 
@@ -23,6 +32,7 @@ test_device() {
 	local target_size=4096
 	local common_args=()
 	local fio_output
+	local md_io_bytes
 
 	test_dev_bs=$(_min_io "$ngdev")
 	common_args=(
@@ -38,6 +48,9 @@ test_device() {
 		--time_based
 		--runtime=2
 	)
+
+	md_io_bytes=$(metadata_bytes_per_4k_io)
+	((md_io_bytes)) && common_args+=(--md_per_io_size="${md_io_bytes}")
 
 	((test_dev_bs > target_size)) && target_size=$test_dev_bs
 
