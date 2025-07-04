@@ -64,7 +64,7 @@ _configure_null_blk() {
 	fi
 	params+=("$@")
 
-	echo "$nullb_path ${params[*]}" >>"${FULL}"
+	[[ -n "${FULL}" ]] && echo "$nullb_path ${params[*]}" >>"${FULL}"
 
 	for param in "${params[@]}"; do
 		local key="${param%%=*}" val="${param#*=}"
