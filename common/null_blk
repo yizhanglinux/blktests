@@ -68,6 +68,7 @@ _configure_null_blk() {
 		shift
 		echo "$val" > "$nullb/$param" || return 1
 	done
+	udevadm settle
 }
 
 _exit_null_blk() {
