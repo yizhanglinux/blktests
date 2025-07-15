@@ -544,6 +544,15 @@ _systemctl_stop() {
 	done
 }
 
+_drain_udev_events() {
+	if command -v systemctl &>/dev/null &&
+			systemctl is-active --quiet systemd-udevd; then
+		systemctl restart systemd-udevd.service
+	else
+		udevadm settle --timeout=900
+	fi
+}
+
 # Run the given command as NORMAL_USER
 _run_user() {
 	su "$NORMAL_USER" -c "$1"
