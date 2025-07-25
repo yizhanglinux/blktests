@@ -46,7 +46,7 @@ test_device() {
 		zbdmode=("--zonemode=zbd" "--max_open_zones=${moaz}")
 	fi
 
-	blkzone reset -o "${ZONE_STARTS[zone_idx]}" "${TEST_DEV}"
+	blkzone reset "${TEST_DEV}"
 
 	_test_dev_set_scheduler deadline
 
