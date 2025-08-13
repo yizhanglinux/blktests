@@ -1,0 +1,86 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2025 Huawei.
+#
+# Test block device unmap write zeroes sysfs interface with device-mapper
+# stacked devices.
+
+. tests/dm/rc
+. common/scsi_debug
+
+DESCRIPTION="test unmap write zeroes sysfs interface with dm devices"
+QUICK=1
+
+requires() {
+	_have_scsi_debug
+}
+
+readonly TO_SKIP=255
+
+setup_test_device() {
+	local dev blk_sz dpath
+
+	if ! _configure_scsi_debug "$@"; then
+		return 1
+	fi
+
+	if [[ ! -f /sys/block/${SCSI_DEBUG_DEVICES[0]}/queue/write_zeroes_unmap_max_hw_bytes ]]; then
+		_exit_scsi_debug
+		return $TO_SKIP
+	fi
+
+	dev="/dev/${SCSI_DEBUG_DEVICES[0]}"
+	blk_sz="$(blockdev --getsz "$dev")"
+	dmsetup create test --table "0 $blk_sz linear $dev 0"
+
+	dpath=$(_real_dev /dev/mapper/test)
+	echo "${dpath##*/}"
+}
+
+cleanup_test_device() {
+	dmsetup remove test
+	_exit_scsi_debug
+}
+
+test() {
+	echo "Running ${TEST_NAME}"
+
+	# disable WRITE SAME with unmap
+	local dname
+	dname=$(setup_test_device lbprz=0)
+	ret=$?
+	if ((ret)); then
+		if ((ret == TO_SKIP)); then
+			SKIP_REASONS+=("kernel does not support unmap write zeroes sysfs interface")
+		fi
+		return 1
+	fi
+
+	umap_hw_bytes="$(cat "/sys/block/$dname/queue/write_zeroes_unmap_max_hw_bytes")"
+	umap_bytes="$(cat "/sys/block/$dname/queue/write_zeroes_unmap_max_bytes")"
+	if [[ $umap_hw_bytes -ne 0 || $umap_bytes -ne 0 ]]; then
+		echo "Test disable WRITE SAME with unmap failed."
+	fi
+	cleanup_test_device
+
+	# enable WRITE SAME with unmap
+	if ! dname=$(setup_test_device lbprz=1 lbpws=1); then
+		return 1
+	fi
+
+	zero_bytes="$(cat "/sys/block/$dname/queue/write_zeroes_max_bytes")"
+	umap_hw_bytes="$(cat "/sys/block/$dname/queue/write_zeroes_unmap_max_hw_bytes")"
+	umap_bytes="$(cat "/sys/block/$dname/queue/write_zeroes_unmap_max_bytes")"
+	if [[ $umap_hw_bytes -ne $zero_bytes || $umap_bytes -ne $zero_bytes ]]; then
+		echo "Test enable WRITE SAME with unmap failed."
+	fi
+
+	echo 0 > "/sys/block/$dname/queue/write_zeroes_unmap_max_bytes"
+	umap_bytes="$(cat "/sys/block/$dname/queue/write_zeroes_unmap_max_bytes")"
+	if [[ $umap_bytes -ne 0 ]]; then
+		echo "Test manually disable WRITE SAME with unmap failed."
+	fi
+	cleanup_test_device
+
+	echo "Test complete"
+}

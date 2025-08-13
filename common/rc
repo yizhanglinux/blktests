@@ -668,3 +668,13 @@ _io_uring_restore()
 		echo "$IO_URING_DISABLED" > /proc/sys/kernel/io_uring_disabled
 	fi
 }
+
+# get real device path name by following link
+_real_dev()
+{
+	local dev=$1
+	if [ -b "$dev" ] && [ -L "$dev" ]; then
+		dev=$(readlink -f "$dev")
+	fi
+	echo "$dev"
+}
