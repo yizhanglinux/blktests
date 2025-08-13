@@ -1,0 +1,84 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2025 Huawei.
+#
+# Test block device unmap write zeroes sysfs interface with various scsi
+# devices.
+
+. tests/scsi/rc
+. common/scsi_debug
+
+DESCRIPTION="test unmap write zeroes sysfs interface with scsi devices"
+QUICK=1
+
+requires() {
+	_have_scsi_debug
+}
+
+setup_test_device() {
+	if ! _configure_scsi_debug "$@"; then
+		return 1
+	fi
+
+	if [[ ! -f /sys/block/${SCSI_DEBUG_DEVICES[0]}/queue/write_zeroes_unmap_max_hw_bytes ]]; then
+		_exit_scsi_debug
+		SKIP_REASONS+=("kernel does not support unmap write zeroes sysfs interface")
+		return 1
+	fi
+}
+
+test() {
+	echo "Running ${TEST_NAME}"
+
+	# disable WRITE SAME with unmap
+	if ! setup_test_device lbprz=0; then
+		return 1
+	fi
+
+	umap_hw_bytes="$(cat "/sys/block/${SCSI_DEBUG_DEVICES[0]}/queue/write_zeroes_unmap_max_hw_bytes")"
+	umap_bytes="$(cat "/sys/block/${SCSI_DEBUG_DEVICES[0]}/queue/write_zeroes_unmap_max_bytes")"
+	if [[ $umap_hw_bytes -ne 0 || $umap_bytes -ne 0 ]]; then
+		echo "Test disable WRITE SAME with unmap failed."
+	fi
+	_exit_scsi_debug
+
+	# enable WRITE SAME(16) with unmap
+	if ! setup_test_device lbprz=1 lbpws=1; then
+		return 1
+	fi
+
+	zero_bytes="$(cat "/sys/block/${SCSI_DEBUG_DEVICES[0]}/queue/write_zeroes_max_bytes")"
+	umap_hw_bytes="$(cat "/sys/block/${SCSI_DEBUG_DEVICES[0]}/queue/write_zeroes_unmap_max_hw_bytes")"
+	umap_bytes="$(cat "/sys/block/${SCSI_DEBUG_DEVICES[0]}/queue/write_zeroes_unmap_max_bytes")"
+	if [[ $umap_hw_bytes -ne $zero_bytes || $umap_bytes -ne $zero_bytes ]]; then
+		echo "Test enable WRITE SAME(16) with unmap failed."
+	fi
+
+	echo 0 > "/sys/block/${SCSI_DEBUG_DEVICES[0]}/queue/write_zeroes_unmap_max_bytes"
+	umap_bytes="$(cat "/sys/block/${SCSI_DEBUG_DEVICES[0]}/queue/write_zeroes_unmap_max_bytes")"
+	if [[ $umap_bytes -ne 0 ]]; then
+		echo "Test manually disable WRITE SAME(16) with unmap failed."
+	fi
+	_exit_scsi_debug
+
+	# enable WRITE SAME(10) with unmap
+	if ! setup_test_device lbprz=1 lbpws10=1; then
+		return 1
+	fi
+
+	zero_bytes="$(cat "/sys/block/${SCSI_DEBUG_DEVICES[0]}/queue/write_zeroes_max_bytes")"
+	umap_hw_bytes="$(cat "/sys/block/${SCSI_DEBUG_DEVICES[0]}/queue/write_zeroes_unmap_max_hw_bytes")"
+	umap_bytes="$(cat "/sys/block/${SCSI_DEBUG_DEVICES[0]}/queue/write_zeroes_unmap_max_bytes")"
+	if [[ $umap_hw_bytes -ne $zero_bytes || $umap_bytes -ne $zero_bytes ]]; then
+		echo "Test enable WRITE SAME(10) with unmap failed."
+	fi
+
+	echo 0 > "/sys/block/${SCSI_DEBUG_DEVICES[0]}/queue/write_zeroes_unmap_max_bytes"
+	umap_bytes="$(cat "/sys/block/${SCSI_DEBUG_DEVICES[0]}/queue/write_zeroes_unmap_max_bytes")"
+	if [[ $umap_bytes -ne 0 ]]; then
+		echo "Test manually disable WRITE SAME(10) with unmap failed."
+	fi
+	_exit_scsi_debug
+
+	echo "Test complete"
+}
