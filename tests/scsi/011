@@ -53,7 +53,9 @@ test() {
 
 	(
 		run_test
-	) || fail=true
+	)
+	# shellcheck disable=SC2181
+	(($? != 0)) && fail=true
 
 	umount "${mount_dir}" >>"${FULL}" 2>&1
 	head -n 999 /sys/bus/pseudo/drivers/scsi_debug/group_number_stats >> "${FULL}"
