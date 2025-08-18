@@ -23,6 +23,7 @@ requires() {
 test_device() {
 	local nvme_ns
 	local pdev
+	local i
 
 	echo "Running ${TEST_NAME}"
 
@@ -49,7 +50,13 @@ test_device() {
 	# Remove and rescan the NVME device to ensure that it has come back
 	echo 1 > "/sys/bus/pci/devices/${pdev}/remove"
 	echo 1 > /sys/bus/pci/rescan
-	if [[ ! -b ${TEST_DEV} ]]; then
+	for ((i = 0; i < 10; i++)); do
+		if [[ -b ${TEST_DEV} ]]; then
+			break
+		fi
+		sleep .5
+	done
+	if (( i >= 10 )); then
 		echo "Failed to restore ${TEST_DEV}"
 	fi
 }
