@@ -56,8 +56,9 @@ test() {
 	# Discard KILLED messages from bash...
 	{
 		kill -9 $switch_pid
+		wait $switch_pid
 		kill -9 $set_pid
-		wait
+		wait $set_pid
 		sleep 1
 	} 2>/dev/null
 
