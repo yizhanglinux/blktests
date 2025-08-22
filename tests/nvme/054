@@ -55,7 +55,7 @@ test_resv() {
 	resv_report "${test_dev}" "${report_arg}"
 
 	echo "Preempt"
-	nvme resv-acquire "${test_dev}" --crkey=4 --rtype=2 --racqa=1
+	nvme resv-acquire "${test_dev}" --crkey=4 --prkey=4 --rtype=2 --racqa=1
 	resv_report "${test_dev}" "${report_arg}"
 
 	echo "Release"
@@ -63,7 +63,6 @@ test_resv() {
 	resv_report "${test_dev}" "${report_arg}"
 
 	echo "Clear"
-	nvme resv-register "${test_dev}" --nrkey=4 --rrega=0
 	nvme resv-acquire "${test_dev}" --crkey=4 --rtype=1 --racqa=0
 	resv_report "${test_dev}" "${report_arg}"
 	nvme resv-release "${test_dev}" --crkey=4 --rrela=1

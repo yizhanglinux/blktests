@@ -54,9 +54,8 @@ regctlext[0] :
   rcsts      : 0
   rkey       : 4
 Clear
-NVME Reservation  success
 NVME Reservation Acquire success
-gen       : 6
+gen       : 5
 rtype     : 1
 regctl    : 1
 regctlext[0] :
