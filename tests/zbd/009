@@ -50,6 +50,7 @@ test() {
 		zone_cap_mb=3
 		zone_nr_conv=0
 		zone_size_mb=4
+		zone_max_open=16
 	)
 	_init_scsi_debug "${params[@]}" || return 1
 
