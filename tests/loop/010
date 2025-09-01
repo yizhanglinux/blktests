@@ -6,6 +6,9 @@
 # stale loop partitions when one process opens the loop partition and
 # another process detaches the loop device.
 #
+# Regression test for commit:
+# 18048c1af783 loop: Fix a race between loop detach and loop open
+
 . tests/loop/rc
 DESCRIPTION="check stale loop partition"
 TIMED=1
