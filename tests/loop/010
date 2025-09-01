@@ -78,11 +78,5 @@ test() {
 	if _dmesg_since_test_start | grep --quiet "$grep_str"; then
 		echo "Fail"
 	fi
-
-	# This test generates udev events faster than the rate at which udevd
-	# can process events. Drain udev events to prevent future test cases
-	# fail.
-	_drain_udev_events
-
 	echo "Test complete"
 }
