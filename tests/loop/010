@@ -60,6 +60,11 @@ test() {
 	mkfs.xfs --force "${loop_device}p1" >& /dev/null
 	losetup --detach "${loop_device}" >&  /dev/null
 
+	# This test generates udev events faster than the rate at which udevd
+	# can process events. Stop systemd-udevd to prevent future test cases
+	# fail.
+	_systemd_stop_udevd
+
 	create_loop "${loop_device}" &
 	create_pid=$!
 	detach_loop "${loop_device}" &
@@ -78,5 +83,8 @@ test() {
 	if _dmesg_since_test_start | grep --quiet "$grep_str"; then
 		echo "Fail"
 	fi
+
+	_systemd_start_udevd
+
 	echo "Test complete"
 }
