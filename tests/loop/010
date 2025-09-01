@@ -73,8 +73,9 @@ test() {
 	sleep "${TIMEOUT:-90}"
 	{
 		kill -9 $create_pid
+		wait $create_pid
 		kill -9 $detach_pid
-		wait
+		wait $detach_pid
 		sleep 1
 	} 2>/dev/null
 
