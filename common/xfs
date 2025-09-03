@@ -134,6 +134,6 @@ run_xfs_io_xstat() {
 	local statx_output
 
 	statx_output=$(xfs_io -c "statx -r -m 0x00010000" "$dev" | \
-		grep "$field" | awk '{ print $3 }')
+		grep "$field =" | awk '{ print $3 }')
 	echo "$statx_output"
 }
