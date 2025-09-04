@@ -6,6 +6,9 @@
 # stale loop partitions when one process opens the loop partition and
 # another process detaches the loop device.
 #
+# Regression test for commit:
+# 18048c1af783 loop: Fix a race between loop detach and loop open
+
 . tests/loop/rc
 DESCRIPTION="check stale loop partition"
 TIMED=1
@@ -60,6 +63,11 @@ test() {
 	mkfs.xfs --force "${loop_device}p1" >& /dev/null
 	losetup --detach "${loop_device}" >&  /dev/null
 
+	# This test generates udev events faster than the rate at which udevd
+	# can process events. Stop systemd-udevd to prevent future test cases
+	# fail.
+	_systemd_stop_udevd
+
 	create_loop "${loop_device}" &
 	create_pid=$!
 	detach_loop "${loop_device}" &
@@ -68,8 +76,9 @@ test() {
 	sleep "${TIMEOUT:-90}"
 	{
 		kill -9 $create_pid
+		wait $create_pid
 		kill -9 $detach_pid
-		wait
+		wait $detach_pid
 		sleep 1
 	} 2>/dev/null
 
@@ -79,10 +88,7 @@ test() {
 		echo "Fail"
 	fi
 
-	# This test generates udev events faster than the rate at which udevd
-	# can process events. Drain udev events to prevent future test cases
-	# fail.
-	_drain_udev_events
+	_systemd_start_udevd
 
 	echo "Test complete"
 }
