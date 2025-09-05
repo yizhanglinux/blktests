@@ -16,6 +16,9 @@ requires() {
 	_have_program mdadm
 	_have_driver scsi_debug
 	_have_xfs_io_atomic_write
+	_have_driver raid0
+	_have_driver raid1
+	_have_driver raid10
 }
 
 test() {
