@@ -30,17 +30,20 @@ options have precedence over the configuration file.
 
 ### Test Devices
 
-The `TEST_DEVS` variable is an array of block devices to test on. Tests will be
-run on all of these devices where applicable. Note that tests are destructive
-and will overwrite any data on these devices.
+Some test cases require a block device for testing. These test cases implement
+a special test function test_device(). The `TEST_DEVS` variable is an array of
+block devices that such test cases to test on. Every test will be run on each of
+these devices where applicable. Note that tests are destructive and will
+overwrite any data on these devices.
 
 ```sh
 TEST_DEVS=(/dev/nvme0n1 /dev/sdb)
 ```
 
 If `TEST_DEVS` is not defined or is empty, only tests which do not require a
-device will be run. If `TEST_DEVS` is defined as a normal variable instead of
-an array, it will be converted to an array by splitting on whitespace.
+device will be run, which implments the test function 'test()'. If `TEST_DEVS`
+is defined as a normal variable instead of an array, it will be converted to an
+array by splitting on whitespace.
 
 Some test cases require multiple block devices for single test run. These test
 cases implement a special test function test_device_array(). TEST_CASE_DEV_ARRAY
