@@ -42,6 +42,20 @@ If `TEST_DEVS` is not defined or is empty, only tests which do not require a
 device will be run. If `TEST_DEVS` is defined as a normal variable instead of
 an array, it will be converted to an array by splitting on whitespace.
 
+Some test cases require multiple block devices for single test run. These test
+cases implement a special test function test_device_array(). TEST_CASE_DEV_ARRAY
+is an associative array which defines test devices for such test cases. In this
+array, each key represents a test case name or a regular expression to match
+test case names. Each key's corresponding value is a list of devices associated
+with the test case. The test cases run for all of the devices specified in the
+list. Again, note that tests are destructive and will overwrite any data on
+these devices.
+
+```sh
+TEST_CASE_DEV_ARRAY[md/003]="/dev/nvme0n1 /dev/nvme1n1 /dev/nvme2n1 /dev/nvme3n1"
+TEST_CASE_DEV_ARRAY[meta/02*]="/dev/nvme0n1 /dev/nvme1n1"
+```
+
 ### Excluding Tests
 
 

@@ -245,6 +245,15 @@ DESCRIPTION=""
 #                               is a partition device (e.g.,
 #                               /sys/block/sda/sda1). If the device is not a
 #                               partition, this is an empty string.
+#
+# Tests that require multiple test devices should rename test() to
+# test_device_array(). These tests will be run with variables defined below
+# instead of TEST_DEV and TEST_DEV_SYSFS:
+#    - \$TEST_DEV_ARRAY -- the block devices to run the test on. The devices are
+#                          taken from TEST_CASE_DEV_ARRAY defined in the config.
+#    - \$TEST_DEV_ARRAY_SYSFS -- the sysfs directories of the devices in the
+#                                form of an associative array. Use values in
+#                                TEST_DEV_ARRAY as the keys.
 test() {
 	echo "Running \${TEST_NAME}"
 
