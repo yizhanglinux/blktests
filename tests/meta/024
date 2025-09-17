@@ -1,0 +1,13 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2025 Western Digital Corporation or its affiliates.
+#
+# Test skipping from test_device_array()
+
+. tests/meta/rc
+
+DESCRIPTION="skip in test_device_array()"
+
+test_device_array() {
+	SKIP_REASONS+=("(╯°□°)╯︵ ┻━┻")
+}
