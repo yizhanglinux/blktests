@@ -13,6 +13,13 @@ _error() {
 	exit 1
 }
 
+_check_exclusive_functions() {
+	if declare -fF "${1}" >/dev/null && declare -fF "${2}" >/dev/null; then
+		_warning "${test_name} defines both ${1} and ${2}"
+		return 1
+	fi
+}
+
 _found_test() {
 	local test_name="$1"
 	local explicit="$2"
@@ -31,10 +38,7 @@ _found_test() {
 		return 1
 	fi
 
-	if declare -fF test >/dev/null && declare -fF test_device >/dev/null; then
-		_warning "${test_name} defines both test() and test_device()"
-		return 1
-	fi
+	_check_exclusive_functions test test_device || return 1
 
 	if ! declare -fF test >/dev/null && ! declare -fF test_device >/dev/null; then
 		_warning "${test_name} does not define test() or test_device()"
