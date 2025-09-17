@@ -26,7 +26,7 @@ _found_test() {
 
 	unset CAN_BE_ZONED DESCRIPTION QUICK TIMED requires device_requires \
 	      test test_device fallback_device cleanup_fallback_device \
-	      set_conditions
+	      set_conditions test_device_array
 
 	# shellcheck disable=SC1090
 	if ! . "tests/${test_name}"; then
@@ -39,14 +39,20 @@ _found_test() {
 	fi
 
 	_check_exclusive_functions test test_device || return 1
+	_check_exclusive_functions test test_device_array || return 1
+	_check_exclusive_functions test_device test_device_array || return 1
 
-	if ! declare -fF test >/dev/null && ! declare -fF test_device >/dev/null; then
-		_warning "${test_name} does not define test() or test_device()"
+	if ! declare -fF test >/dev/null && \
+			! declare -fF test_device >/dev/null && \
+			! declare -fF test_device_array >/dev/null; then
+		_warning "${test_name} does not define test(), test_device() or test_device_array()"
 		return 1
 	fi
 
-	if declare -fF device_requires >/dev/null && ! declare -fF test_device >/dev/null; then
-		_warning "${test_name} defines device_requires() but not test_device()"
+	if declare -fF device_requires >/dev/null && \
+			! declare -fF test_device >/dev/null && \
+			! declare -fF test_device_array >/dev/null; then
+		_warning "${test_name} defines device_requires() but not either test_device() or test_device_array()"
 		return 1
 	fi
 
@@ -71,7 +77,9 @@ _found_test() {
 	fi
 
 	if (( ! explicit )); then
-		if [[ $DEVICE_ONLY -ne 0 ]] && ! declare -fF test_device >/dev/null; then
+		if [[ $DEVICE_ONLY -ne 0 ]] && \
+			   ! declare -fF test_device >/dev/null && \
+			   ! declare -fF test_device_array >/dev/null; then
 			return
 		fi
 		if (( QUICK_RUN && !QUICK && !TIMED )); then
@@ -518,6 +526,75 @@ _check_and_call_test_device() {
 	return $ret
 }
 
+_get_test_device_array_key() {
+	local key
+
+	for key in "${!TEST_CASE_DEV_ARRAY[@]}"; do
+		if [[ $TEST_NAME == "$key" ]]; then
+			echo "$TEST_NAME"
+			return
+		fi
+	done
+
+	for key in "${!TEST_CASE_DEV_ARRAY[@]}"; do
+		if [[ $TEST_NAME =~ $key ]]; then
+			echo "$key"
+			return
+		fi
+	done
+
+	return 1
+}
+
+_check_and_call_test_device_array() {
+	local array_name="" key
+	local ret=0 i
+	local -a devs sysfs_dirs
+
+	if declare -fF requires >/dev/null; then
+		requires
+	fi
+
+	TEST_DEV_ARRAY=()
+	if key=$(_get_test_device_array_key); then
+		IFS=" " read -r -a devs <<< "${TEST_CASE_DEV_ARRAY[$key]}"
+		IFS=" " read -r -a sysfs_dirs <<< \
+		   "${TEST_CASE_DEV_ARRAY_SYSFS_DIRS[$key]}"
+		for ((i = 0; i < "${#devs[@]}"; i++)); do
+			TEST_DEV=${devs[$i]}
+			TEST_DEV_SYSFS=${sysfs_dirs[$i]}
+			if (( !CAN_BE_ZONED )) && _test_dev_is_zoned; then
+				SKIP_REASONS+=("${TEST_DEV} is a zoned block device")
+			elif declare -fF device_requires >/dev/null; then
+				device_requires
+			fi
+			TEST_DEV_ARRAY+=("$TEST_DEV")
+			TEST_DEV_ARRAY_SYSFS_DIRS[$TEST_DEV]=$TEST_DEV_SYSFS
+			[[ -n $array_name ]] && array_name+="_"
+			array_name+="$(basename "$TEST_DEV")"
+		done
+	fi
+
+	if ((${#TEST_DEV_ARRAY[@]} == 0)); then
+		SKIP_REASONS+=("TEST_CASE_DEV_ARRAY is not defined for ${TEST_NAME}")
+	fi
+
+	unset TEST_DEV
+	unset TEST_DEV_SYSFS
+	RESULTS_DIR="$OUTPUT/${array_name}${postfix}"
+	# Avoid "if" and "!" for errexit in test cases
+	_call_test test_device_array
+	# shellcheck disable=SC2181
+	(($? != 0)) && ret=1
+
+	TEST_DEV_ARRAY=()
+	for ((i = 0; i < "${#devs[@]}"; i++)); do
+		unset "TEST_DEV_ARRAY_SYSFS_DIRS[${devs[i]}]"
+	done
+
+	return $ret
+}
+
 _run_test() {
 	TEST_NAME="$1"
 	CAN_BE_ZONED=0
@@ -554,7 +631,7 @@ _run_test() {
 			_check_and_call_test
 			ret=$?
 		fi
-	else
+	elif declare -fF test_device >/dev/null; then
 		if [[ ${#TEST_DEVS[@]} -eq 0 ]] && \
 			declare -fF fallback_device >/dev/null; then
 			if ! test_dev=$(fallback_device); then
@@ -594,6 +671,9 @@ _run_test() {
 			unset "TEST_DEV_PART_SYSFS_DIRS[${TEST_DEVS[0]}]"
 			TEST_DEVS=()
 		fi
+	else
+		_check_and_call_test_device_array
+		ret=$?
 	fi
 
 	_unload_modules
@@ -604,6 +684,8 @@ _run_test() {
 _run_group() {
 	local tests=("$@")
 	local group="${tests["0"]%/*}"
+	local key
+	local -a devs sysfs_dirs
 
 	# shellcheck disable=SC1090
 	. "tests/${group}/rc"
@@ -637,6 +719,33 @@ _run_group() {
 		# Fix the array indices.
 		TEST_DEVS=("${TEST_DEVS[@]}")
 		unset TEST_DEV
+
+		for key in "${!TEST_CASE_DEV_ARRAY[@]}"; do
+			if [[ ! $key =~ ${group} ]]; then
+				continue
+			fi
+			IFS=" " read -r -a devs <<< \
+			   "${TEST_CASE_DEV_ARRAY[$key]}"
+			IFS=" " read -r -a sysfs_dirs <<< \
+			   "${TEST_CASE_DEV_ARRAY_SYSFS_DIRS[$key]}"
+			for ((i = 0; i < ${#devs[@]}; i++)); do
+				TEST_DEV="${devs[$i]}"
+				TEST_DEV_SYSFS="${sysfs_dirs[$i]}"
+				unset TEST_DEV_PART_SYSFS
+				group_device_requires
+				if [[ -v SKIP_REASONS ]]; then
+					_output_notrun "${group}/*** => $(basename "$TEST_DEV")"
+					unset "devs[$i]"
+					unset "sysfs_dirs[$i]"
+					unset SKIP_REASONS
+				fi
+			done
+			# Fix the array elements.
+			TEST_CASE_DEV_ARRAY["$key"]="${devs[*]}"
+			TEST_CASE_DEV_ARRAY_SYSFS_DIRS["$key"]="${sysfs_dirs[*]}"
+			unset TEST_DEV
+			unset TEST_DEV_SYSFS
+		done
 	fi
 
 	local ret=0
@@ -652,7 +761,8 @@ _run_group() {
 
 _find_sysfs_dirs() {
 	local test_dev="$1"
-	local sysfs_path
+	local array_test_name="$2"
+	local sysfs_path sysfs_paths
 	local major=$((0x$(stat -L -c '%t' "$test_dev")))
 	local minor=$((0x$(stat -L -c '%T' "$test_dev")))
 
@@ -661,7 +771,12 @@ _find_sysfs_dirs() {
 		return 1
 	fi
 
-	if [[ -r "${sysfs_path}"/partition ]]; then
+	if [[ -n $array_test_name ]]; then
+		sysfs_paths=${TEST_CASE_DEV_ARRAY_SYSFS_DIRS["$array_test_name"]}
+		[[ -n $sysfs_paths ]] && sysfs_paths="${sysfs_paths} "
+		sysfs_paths+="$sysfs_path"
+		TEST_CASE_DEV_ARRAY_SYSFS_DIRS["$array_test_name"]="${sysfs_paths}"
+	elif [[ -r "${sysfs_path}"/partition ]]; then
 		# If the device is a partition device, cut the last device name
 		# of the canonical sysfs path to access to the sysfs of its
 		# holder device.
@@ -676,21 +791,43 @@ _find_sysfs_dirs() {
 
 declare -A TEST_DEV_SYSFS_DIRS
 declare -A TEST_DEV_PART_SYSFS_DIRS
+declare -a TEST_DEV_ARRAY
+# shellcheck disable=SC2034
+declare -A TEST_DEV_ARRAY_SYSFS_DIRS
+declare -A TEST_CASE_DEV_ARRAY
+declare -A TEST_CASE_DEV_ARRAY_SYSFS_DIRS
 _check() {
 	# shellcheck disable=SC2034
 	SRCDIR="$(realpath src)"
 
-	local test_dev
-	for test_dev in "${TEST_DEVS[@]}"; do
+	local test_dev test_name
+	local -a all_test_devs_in_array
+
+	for test_name in "${!TEST_CASE_DEV_ARRAY[@]}"; do
+		IFS=" " read -r -a all_test_devs_in_array <<< \
+			   "${TEST_CASE_DEV_ARRAY[$test_name]}"
+	done
+
+	for test_dev in "${TEST_DEVS[@]}" "${all_test_devs_in_array[@]}"; do
 		if [[ ! -e $test_dev ]]; then
 			_error "${test_dev} does not exist"
 		elif [[ ! -b $test_dev ]]; then
 			_error "${test_dev} is not a block device"
 		fi
+	done
 
+	for test_dev in "${TEST_DEVS[@]}"; do
 		if ! _find_sysfs_dirs "$test_dev"; then
 			_error "could not find sysfs directory for ${test_dev}"
 		fi
+	done
+
+	for test_name in "${!TEST_CASE_DEV_ARRAY[@]}"; do
+		for test_dev in ${TEST_CASE_DEV_ARRAY[$test_name]}; do
+			if ! _find_sysfs_dirs "$test_dev" "$test_name"; then
+				_error "could not find sysfs directory for ${test_dev}"
+			fi
+		done
 	done
 
 	local test_name group prev_group
