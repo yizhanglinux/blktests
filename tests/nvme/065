@@ -20,8 +20,6 @@ requires() {
 	_require_nvme_trtype_is_loop
 }
 
-readonly TO_SKIP=255
-
 setup_test_device() {
 	local port
 

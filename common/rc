@@ -14,6 +14,7 @@ shopt -s extglob
 
 declare IO_URING_DISABLED
 declare -a SYSTEMCTL_UNITS_TO_STOP
+export TO_SKIP=255
 
 # If a test runs multiple "subtests", then each subtest should typically run
 # for TIMEOUT / number of subtests.
