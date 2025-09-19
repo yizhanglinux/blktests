@@ -10,3 +10,4 @@
 /zbdioctl
 /miniublk
 /nvme-passthrough-meta
+/ioctl-lbmd-query

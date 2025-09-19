@@ -14,6 +14,7 @@ C_TARGETS := \
 	loop_get_status_null \
 	mount_clear_sock \
 	nvme-passthrough-meta \
+	ioctl-lbmd-query \
 	nbdsetsize \
 	openclose \
 	sg/dxfer-from-dev \

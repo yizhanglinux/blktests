@@ -1,0 +1,71 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2025 Anuj Gupta, Samsung Electronics
+
+# Test: io_uring read with metadata buffer using FIO's io_uring PI interface
+
+. tests/block/rc
+. common/nvme
+
+DESCRIPTION="io_uring read with PI metadata buffer on block device"
+
+device_requires() {
+	_require_test_dev_is_nvme
+	_test_dev_has_metadata
+	_test_dev_disables_extended_lba
+}
+
+requires() {
+	_have_fio
+	_have_kernel_option IO_URING
+	_have_kernel_option BLK_DEV_INTEGRITY
+	_have_fio_ver 3 40
+}
+
+test_device() {
+	echo "Running ${TEST_NAME}"
+
+	# shellcheck disable=SC2034
+	local lbmd_flags lbmd_size lbmd_interval
+	local cap_out bs md_per_io_size
+
+	# Query integrity capabilities via ioctl helper
+	cap_out=$(src/ioctl-lbmd-query "$TEST_DEV")
+	ret=$?
+	if [[ $ret != 0 ]]; then
+		SKIP_REASONS+=("FS_IOC_GETLBMD_CAP ioctl not supported")
+		return
+	fi
+	if [[ $cap_out == "unsupported" ]]; then
+		SKIP_REASONS+=("Integrity not supported on $TEST_DEV")
+		return
+	fi
+
+	# Parse fields
+	eval "$cap_out"  # sets lbmd_flags, lbmd_size, lbmd_interval
+
+	# Calculate md_per_io_size = (bs / interval) * size
+	bs=$(_min_io "$TEST_DEV")
+	md_per_io_size=$((bs * lbmd_size / lbmd_interval))
+
+	local fio_args=(
+		--name=pi_read_test
+		--filename="$TEST_DEV"
+		--size=1M
+		--bs="$bs"
+		--rw=write
+		--ioengine=io_uring
+		--iodepth=8
+		--numjobs=1
+		--direct=1
+		--time_based
+		--runtime=3
+		--md_per_io_size="$md_per_io_size"
+		--pi_act=0            # Host supplies metadata
+		--pi_chk=APPTAG       # Only check app tag
+		--apptag=0x1234
+	)
+
+	_run_fio "${fio_args[@]}"
+	echo "Test complete"
+}
