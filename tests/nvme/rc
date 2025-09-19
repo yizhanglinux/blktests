@@ -129,14 +129,6 @@ group_device_requires() {
 	_require_test_dev_is_nvme
 }
 
-_require_test_dev_is_nvme() {
-	if ! readlink -f "$TEST_DEV_SYSFS/device" | grep -q nvme; then
-		SKIP_REASONS+=("$TEST_DEV is not a NVMe device")
-		return 1
-	fi
-	return 0
-}
-
 _require_test_dev_is_nvme_pci() {
 	if [[ ! "$(readlink -f "$TEST_DEV_SYSFS/device")" =~ devices/pci ]]; then
 		SKIP_REASONS+=("$TEST_DEV is not a PCI NVMe device")
@@ -163,39 +155,6 @@ _require_test_dev_support_sed() {
 	fi
 	SKIP_REASONS+=("$TEST_DEV doesn't support SED operations")
 	return 1
-}
-
-_test_dev_has_metadata() {
-	if [ ! -e "${TEST_DEV_SYSFS}/metadata_bytes" ] || \
-		   (( ! $(<"${TEST_DEV_SYSFS}/metadata_bytes") )); then
-		SKIP_REASONS+=("$TEST_DEV does not have metadata")
-		return 1
-	fi
-	return 0
-}
-
-_test_dev_has_no_metadata() {
-	if [ -e "${TEST_DEV_SYSFS}/metadata_bytes" ] &&
-		   (( $(<"${TEST_DEV_SYSFS}/metadata_bytes") )); then
-		SKIP_REASONS+=("$TEST_DEV has metadata")
-		return 1
-	fi
-	return 0
-}
-
-_test_dev_disables_extended_lba() {
-	local flbas
-
-	if ! flbas=$(nvme id-ns "$TEST_DEV" | grep flbas | \
-			     sed --quiet 's/.*: \(.*\)/\1/p'); then
-		SKIP_REASONS+=("$TEST_DEV does not have namespace flbas field")
-		return 1
-	fi
-	if (( flbas & 0x10 )); then
-		SKIP_REASONS+=("$TEST_DEV enables NVME_NS_FLBAS_META_EXT")
-		return 1
-	fi
-	return 0
 }
 
 _require_nvme_test_img_size() {
