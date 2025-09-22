@@ -54,64 +54,6 @@ _set_nvmet_blkdev_type() {
 	COND_DESC="bd=${nvmet_blkdev_type}"
 }
 
-_nvme_requires() {
-	_require_nvme_test_img_size 4m
-	case ${nvme_trtype} in
-	loop)
-		_have_driver nvme-loop
-		_have_configfs
-		;;
-	pci)
-		_have_driver nvme
-		;;
-	tcp)
-		_have_driver nvme-tcp
-		_have_driver nvmet-tcp
-		_have_configfs
-		;;
-	rdma)
-		_have_driver nvme-rdma
-		_have_driver nvmet-rdma
-		_have_configfs
-		_have_program rdma
-		if [ -n "$USE_RXE" ]; then
-			_have_driver rdma_rxe
-		else
-			_have_driver siw
-		fi
-		;;
-	fc)
-		_have_driver nvme-fc
-		_have_driver nvme-fcloop
-		_have_configfs
-		def_adrfam="fc"
-		;;
-	esac
-
-	if [[ -n ${nvme_adrfam} ]]; then
-		case ${nvme_adrfam} in
-		ipv6)
-			def_traddr="::1"
-			def_adrfam="ipv6"
-			;;
-		ipv4)
-			;; # was already set
-		fc)
-			def_adrfam="fc"
-			;;
-		*)
-			# ignore for non ip transports
-			if [[ "${nvme_trtype}" == "tcp" ||
-			      "${nvme_trtype}" == "rdma" ]]; then
-				SKIP_REASONS+=("unsupported nvme_adrfam=${nvme_adrfam}")
-				return 1
-			fi
-		esac
-	fi
-
-	return 0
-}
-
 group_setup() {
 	if [[ -n "${nvme_target_control}" ]]; then
 		NVMET_TRTYPES="$(${nvme_target_control} config --show-trtype)"
@@ -155,20 +97,6 @@ _require_test_dev_support_sed() {
 	fi
 	SKIP_REASONS+=("$TEST_DEV doesn't support SED operations")
 	return 1
-}
-
-_require_nvme_test_img_size() {
-	local require_sz_mb
-	local nvme_img_size_mb
-
-	require_sz_mb="$(convert_to_mb "$1")"
-	nvme_img_size_mb="$(convert_to_mb "${NVME_IMG_SIZE}")"
-
-	if ((nvme_img_size_mb < require_sz_mb)); then
-		SKIP_REASONS+=("NVME_IMG_SIZE must be at least ${require_sz_mb}m")
-		return 1
-	fi
-	return 0
 }
 
 _require_nvme_cli_auth() {
