@@ -1,43 +1,119 @@
 Running md/002
-TEST 1 RAID 0 - Verify md sysfs atomic attributes matches scsi - pass
-TEST 2 RAID 0 - Verify sysfs atomic attributes - pass
-TEST 3 RAID 0 - Verify md sysfs_atomic_max_bytes is less than or equal scsi sysfs_atomic_max_bytes - pass
-TEST 4 RAID 0 - check sysfs atomic_write_unit_max_bytes <= scsi_debug atomic_wr_max_length - pass
-TEST 5 RAID 0 - check sysfs atomic_write_unit_min_bytes = scsi_debug atomic_wr_gran - pass
-TEST 6 RAID 0 - check statx stx_atomic_write_unit_min - pass
-TEST 7 RAID 0 - check statx stx_atomic_write_unit_max - pass
-TEST 8 RAID 0 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes with RWF_ATOMIC flag - pwritev2 should be succesful - pass
+TEST 1 raid0 step 1 - Verify md sysfs atomic attributes matches - pass
+TEST 2 raid0 step 1 - Verify sysfs atomic attributes - pass
+TEST 3 raid0 step 1 - Verify md sysfs_atomic_write_max is equal to expected_atomic_write_max - pass
+TEST 4 raid0 step 1 - Verify sysfs atomic_write_unit_max_bytes =  expected_atomic_write_unit_max - pass
+TEST 5 raid0 step 1 - Verify sysfs atomic_write_unit_boundary_bytes = expected atomic_write_unit_boundary_bytes - pass
+TEST 6 raid0 step 1 - Verify statx stx_atomic_write_unit_min - pass
+TEST 7 raid0 step 1 - Verify statx stx_atomic_write_unit_max - pass
+TEST 8 raid0 step 1 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
 pwrite: Invalid argument
-TEST 9 RAID 0 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes + 512 bytes with RWF_ATOMIC flag - pwritev2 should not be succesful - pass
-TEST 10 RAID 0 - perform a pwritev2 with size of sysfs_atomic_unit_min_bytes with RWF_ATOMIC flag - pwritev2 should be succesful - pass
+TEST 9 raid0 step 1 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes + LBS bytes with RWF_ATOMIC flag - pwritev2 should not be succesful - pass
+TEST 10 raid0 step 1 - perform a pwritev2 with size of sysfs_atomic_unit_min_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
 pwrite: Invalid argument
-TEST 11 RAID 0 - perform a pwritev2 with a size of sysfs_atomic_unit_min_bytes - 512 bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
-TEST 12 RAID 0 - Verify chunk size  - pass
-TEST 1 RAID 1 - Verify md sysfs atomic attributes matches scsi - pass
-TEST 2 RAID 1 - Verify sysfs atomic attributes - pass
-TEST 3 RAID 1 - Verify md sysfs_atomic_max_bytes is less than or equal scsi sysfs_atomic_max_bytes - pass
-TEST 4 RAID 1 - check sysfs atomic_write_unit_max_bytes <= scsi_debug atomic_wr_max_length - pass
-TEST 5 RAID 1 - check sysfs atomic_write_unit_min_bytes = scsi_debug atomic_wr_gran - pass
-TEST 6 RAID 1 - check statx stx_atomic_write_unit_min - pass
-TEST 7 RAID 1 - check statx stx_atomic_write_unit_max - pass
-TEST 8 RAID 1 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes with RWF_ATOMIC flag - pwritev2 should be succesful - pass
+TEST 11 raid0 step 1 - perform a pwritev2 with a size of sysfs_atomic_write_unit_max_bytes - LBS bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+TEST 1 raid0 step 2 - Verify md sysfs atomic attributes matches - pass
+TEST 2 raid0 step 2 - Verify sysfs atomic attributes - pass
+TEST 3 raid0 step 2 - Verify md sysfs_atomic_write_max is equal to expected_atomic_write_max - pass
+TEST 4 raid0 step 2 - Verify sysfs atomic_write_unit_max_bytes =  expected_atomic_write_unit_max - pass
+TEST 5 raid0 step 2 - Verify sysfs atomic_write_unit_boundary_bytes = expected atomic_write_unit_boundary_bytes - pass
+TEST 6 raid0 step 2 - Verify statx stx_atomic_write_unit_min - pass
+TEST 7 raid0 step 2 - Verify statx stx_atomic_write_unit_max - pass
+TEST 8 raid0 step 2 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
 pwrite: Invalid argument
-TEST 9 RAID 1 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes + 512 bytes with RWF_ATOMIC flag - pwritev2 should not be succesful - pass
-TEST 10 RAID 1 - perform a pwritev2 with size of sysfs_atomic_unit_min_bytes with RWF_ATOMIC flag - pwritev2 should be succesful - pass
+TEST 9 raid0 step 2 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes + LBS bytes with RWF_ATOMIC flag - pwritev2 should not be succesful - pass
+TEST 10 raid0 step 2 - perform a pwritev2 with size of sysfs_atomic_unit_min_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
 pwrite: Invalid argument
-TEST 11 RAID 1 - perform a pwritev2 with a size of sysfs_atomic_unit_min_bytes - 512 bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
-TEST 1 RAID 10 - Verify md sysfs atomic attributes matches scsi - pass
-TEST 2 RAID 10 - Verify sysfs atomic attributes - pass
-TEST 3 RAID 10 - Verify md sysfs_atomic_max_bytes is less than or equal scsi sysfs_atomic_max_bytes - pass
-TEST 4 RAID 10 - check sysfs atomic_write_unit_max_bytes <= scsi_debug atomic_wr_max_length - pass
-TEST 5 RAID 10 - check sysfs atomic_write_unit_min_bytes = scsi_debug atomic_wr_gran - pass
-TEST 6 RAID 10 - check statx stx_atomic_write_unit_min - pass
-TEST 7 RAID 10 - check statx stx_atomic_write_unit_max - pass
-TEST 8 RAID 10 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes with RWF_ATOMIC flag - pwritev2 should be succesful - pass
+TEST 11 raid0 step 2 - perform a pwritev2 with a size of sysfs_atomic_write_unit_max_bytes - LBS bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+TEST 1 raid0 step 3 - Verify md sysfs atomic attributes matches - pass
+TEST 2 raid0 step 3 - Verify sysfs atomic attributes - pass
+TEST 3 raid0 step 3 - Verify md sysfs_atomic_write_max is equal to expected_atomic_write_max - pass
+TEST 4 raid0 step 3 - Verify sysfs atomic_write_unit_max_bytes =  expected_atomic_write_unit_max - pass
+TEST 5 raid0 step 3 - Verify sysfs atomic_write_unit_boundary_bytes = expected atomic_write_unit_boundary_bytes - pass
+TEST 6 raid0 step 3 - Verify statx stx_atomic_write_unit_min - pass
+TEST 7 raid0 step 3 - Verify statx stx_atomic_write_unit_max - pass
+TEST 8 raid0 step 3 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
 pwrite: Invalid argument
-TEST 9 RAID 10 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes + 512 bytes with RWF_ATOMIC flag - pwritev2 should not be succesful - pass
-TEST 10 RAID 10 - perform a pwritev2 with size of sysfs_atomic_unit_min_bytes with RWF_ATOMIC flag - pwritev2 should be succesful - pass
+TEST 9 raid0 step 3 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes + LBS bytes with RWF_ATOMIC flag - pwritev2 should not be succesful - pass
+TEST 10 raid0 step 3 - perform a pwritev2 with size of sysfs_atomic_unit_min_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
 pwrite: Invalid argument
-TEST 11 RAID 10 - perform a pwritev2 with a size of sysfs_atomic_unit_min_bytes - 512 bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
-TEST 12 RAID 10 - Verify chunk size  - pass
+TEST 11 raid0 step 3 - perform a pwritev2 with a size of sysfs_atomic_write_unit_max_bytes - LBS bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+TEST 1 raid0 step 4 - Verify md sysfs atomic attributes matches - pass
+TEST 2 raid0 step 4 - Verify sysfs atomic attributes - pass
+TEST 3 raid0 step 4 - Verify md sysfs_atomic_write_max is equal to expected_atomic_write_max - pass
+TEST 4 raid0 step 4 - Verify sysfs atomic_write_unit_max_bytes =  expected_atomic_write_unit_max - pass
+TEST 5 raid0 step 4 - Verify sysfs atomic_write_unit_boundary_bytes = expected atomic_write_unit_boundary_bytes - pass
+TEST 6 raid0 step 4 - Verify statx stx_atomic_write_unit_min - pass
+TEST 7 raid0 step 4 - Verify statx stx_atomic_write_unit_max - pass
+TEST 8 raid0 step 4 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+pwrite: Invalid argument
+TEST 9 raid0 step 4 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes + LBS bytes with RWF_ATOMIC flag - pwritev2 should not be succesful - pass
+TEST 10 raid0 step 4 - perform a pwritev2 with size of sysfs_atomic_unit_min_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+pwrite: Invalid argument
+TEST 11 raid0 step 4 - perform a pwritev2 with a size of sysfs_atomic_write_unit_max_bytes - LBS bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+TEST 1 raid1 step 1 - Verify md sysfs atomic attributes matches - pass
+TEST 2 raid1 step 1 - Verify sysfs atomic attributes - pass
+TEST 3 raid1 step 1 - Verify md sysfs_atomic_write_max is equal to expected_atomic_write_max - pass
+TEST 4 raid1 step 1 - Verify sysfs atomic_write_unit_max_bytes =  expected_atomic_write_unit_max - pass
+TEST 5 raid1 step 1 - Verify sysfs atomic_write_unit_boundary_bytes = expected atomic_write_unit_boundary_bytes - pass
+TEST 6 raid1 step 1 - Verify statx stx_atomic_write_unit_min - pass
+TEST 7 raid1 step 1 - Verify statx stx_atomic_write_unit_max - pass
+TEST 8 raid1 step 1 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+pwrite: Invalid argument
+TEST 9 raid1 step 1 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes + LBS bytes with RWF_ATOMIC flag - pwritev2 should not be succesful - pass
+TEST 10 raid1 step 1 - perform a pwritev2 with size of sysfs_atomic_unit_min_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+pwrite: Invalid argument
+TEST 11 raid1 step 1 - perform a pwritev2 with a size of sysfs_atomic_write_unit_max_bytes - LBS bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+TEST 1 raid10 step 1 - Verify md sysfs atomic attributes matches - pass
+TEST 2 raid10 step 1 - Verify sysfs atomic attributes - pass
+TEST 3 raid10 step 1 - Verify md sysfs_atomic_write_max is equal to expected_atomic_write_max - pass
+TEST 4 raid10 step 1 - Verify sysfs atomic_write_unit_max_bytes =  expected_atomic_write_unit_max - pass
+TEST 5 raid10 step 1 - Verify sysfs atomic_write_unit_boundary_bytes = expected atomic_write_unit_boundary_bytes - pass
+TEST 6 raid10 step 1 - Verify statx stx_atomic_write_unit_min - pass
+TEST 7 raid10 step 1 - Verify statx stx_atomic_write_unit_max - pass
+TEST 8 raid10 step 1 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+pwrite: Invalid argument
+TEST 9 raid10 step 1 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes + LBS bytes with RWF_ATOMIC flag - pwritev2 should not be succesful - pass
+TEST 10 raid10 step 1 - perform a pwritev2 with size of sysfs_atomic_unit_min_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+pwrite: Invalid argument
+TEST 11 raid10 step 1 - perform a pwritev2 with a size of sysfs_atomic_write_unit_max_bytes - LBS bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+TEST 1 raid10 step 2 - Verify md sysfs atomic attributes matches - pass
+TEST 2 raid10 step 2 - Verify sysfs atomic attributes - pass
+TEST 3 raid10 step 2 - Verify md sysfs_atomic_write_max is equal to expected_atomic_write_max - pass
+TEST 4 raid10 step 2 - Verify sysfs atomic_write_unit_max_bytes =  expected_atomic_write_unit_max - pass
+TEST 5 raid10 step 2 - Verify sysfs atomic_write_unit_boundary_bytes = expected atomic_write_unit_boundary_bytes - pass
+TEST 6 raid10 step 2 - Verify statx stx_atomic_write_unit_min - pass
+TEST 7 raid10 step 2 - Verify statx stx_atomic_write_unit_max - pass
+TEST 8 raid10 step 2 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+pwrite: Invalid argument
+TEST 9 raid10 step 2 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes + LBS bytes with RWF_ATOMIC flag - pwritev2 should not be succesful - pass
+TEST 10 raid10 step 2 - perform a pwritev2 with size of sysfs_atomic_unit_min_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+pwrite: Invalid argument
+TEST 11 raid10 step 2 - perform a pwritev2 with a size of sysfs_atomic_write_unit_max_bytes - LBS bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+TEST 1 raid10 step 3 - Verify md sysfs atomic attributes matches - pass
+TEST 2 raid10 step 3 - Verify sysfs atomic attributes - pass
+TEST 3 raid10 step 3 - Verify md sysfs_atomic_write_max is equal to expected_atomic_write_max - pass
+TEST 4 raid10 step 3 - Verify sysfs atomic_write_unit_max_bytes =  expected_atomic_write_unit_max - pass
+TEST 5 raid10 step 3 - Verify sysfs atomic_write_unit_boundary_bytes = expected atomic_write_unit_boundary_bytes - pass
+TEST 6 raid10 step 3 - Verify statx stx_atomic_write_unit_min - pass
+TEST 7 raid10 step 3 - Verify statx stx_atomic_write_unit_max - pass
+TEST 8 raid10 step 3 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+pwrite: Invalid argument
+TEST 9 raid10 step 3 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes + LBS bytes with RWF_ATOMIC flag - pwritev2 should not be succesful - pass
+TEST 10 raid10 step 3 - perform a pwritev2 with size of sysfs_atomic_unit_min_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+pwrite: Invalid argument
+TEST 11 raid10 step 3 - perform a pwritev2 with a size of sysfs_atomic_write_unit_max_bytes - LBS bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+TEST 1 raid10 step 4 - Verify md sysfs atomic attributes matches - pass
+TEST 2 raid10 step 4 - Verify sysfs atomic attributes - pass
+TEST 3 raid10 step 4 - Verify md sysfs_atomic_write_max is equal to expected_atomic_write_max - pass
+TEST 4 raid10 step 4 - Verify sysfs atomic_write_unit_max_bytes =  expected_atomic_write_unit_max - pass
+TEST 5 raid10 step 4 - Verify sysfs atomic_write_unit_boundary_bytes = expected atomic_write_unit_boundary_bytes - pass
+TEST 6 raid10 step 4 - Verify statx stx_atomic_write_unit_min - pass
+TEST 7 raid10 step 4 - Verify statx stx_atomic_write_unit_max - pass
+TEST 8 raid10 step 4 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+pwrite: Invalid argument
+TEST 9 raid10 step 4 - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes + LBS bytes with RWF_ATOMIC flag - pwritev2 should not be succesful - pass
+TEST 10 raid10 step 4 - perform a pwritev2 with size of sysfs_atomic_unit_min_bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
+pwrite: Invalid argument
+TEST 11 raid10 step 4 - perform a pwritev2 with a size of sysfs_atomic_write_unit_max_bytes - LBS bytes with RWF_ATOMIC flag - pwritev2 should fail - pass
 Test complete
