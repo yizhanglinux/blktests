@@ -157,9 +157,11 @@ _md_atomics_test() {
 		raw_atomic_write_boundary=0;
 	fi
 
-	for personality in raid0 raid1 raid10 dm-linear; do
+
+	for personality in raid0 raid1 raid10 dm-linear dm-stripe; do
 		local step_limit
-		if [ "$personality" = raid0 ] || [ "$personality" = raid10 ]
+		if [ "$personality" = raid0 ] || [ "$personality" = raid10 ] || \
+		    [ "$personality" = dm-stripe ]
 		then
 			step_limit=4
 		else
@@ -225,7 +227,7 @@ _md_atomics_test() {
 				md_dev=$(readlink /dev/md/blktests_md | sed 's|\.\./||')
 			fi
 
-			if [ "$personality" = dm-linear ]
+			if [ "$personality" = dm-linear ] || [ "$personality" = dm-stripe ]
 			then
 				for i in "${MD_DEVICES[@]}"; do
 					pvremove --force /dev/"$i" 2> /dev/null 1>&2
@@ -234,6 +236,25 @@ _md_atomics_test() {
 
 				echo y | vgcreate blktests_vg00 /dev/"${dev0}" /dev/"${dev1}" \
 						/dev/"${dev2}" /dev/"${dev3}" 2> /dev/null 1>&2
+			fi
+
+			if [ "$personality" = dm-stripe ]
+			then
+				atomics_boundaries_unit_max=$(_md_atomics_boundaries_max "$raw_atomic_write_boundary" $md_chunk_size "1")
+				atomics_boundaries_max=$(_md_atomics_boundaries_max "$raw_atomic_write_boundary" $md_chunk_size "0")
+
+				# The caller should ensure test device size, we ask for a total of 10M
+				# So each should be at least (10M + meta) / 4 in size, so 5 each should be enough
+				echo y | lvm lvcreate --stripes 4 --stripesize "${md_chunk_size_kb}" -L 10M \
+					-n blktests_lv blktests_vg00 2> /dev/null 1>&2
+				md_dev=$(readlink /dev/mapper/blktests_vg00-blktests_lv | sed 's|\.\./||')
+				expected_atomic_write_unit_min=$(_min "$expected_atomic_write_unit_min" "$atomics_boundaries_unit_max")
+				expected_atomic_write_unit_max=$(_min "$expected_atomic_write_unit_max" "$atomics_boundaries_unit_max")
+				expected_atomic_write_max=$(_min "$expected_atomic_write_max" "$atomics_boundaries_max")
+				if [ "$atomics_boundaries_max" -eq 0 ]
+				then
+					expected_atomic_write_boundary=0
+				fi
 			fi
 
 			if [ "$personality" = dm-linear ]
@@ -416,7 +437,7 @@ _md_atomics_test() {
 				done
 			fi
 
-			if [ "$personality" = dm-linear ]
+			if [ "$personality" = dm-linear ] || [ "$personality" = dm-stripe ]
 			then
 				lvremove --force  /dev/mapper/blktests_vg00-blktests_lv  2> /dev/null 1>&2
 				vgremove --force blktests_vg00 2> /dev/null 1>&2
