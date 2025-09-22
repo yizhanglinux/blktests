@@ -5,9 +5,386 @@
 # Tests for md raid
 
 . common/rc
+. common/xfs
 
 group_requires() {
 	_have_root
 	_have_program mdadm
 	_have_driver md-mod
+}
+
+_stacked_atomic_test_requires() {
+	_have_kver 6 14 0
+	_have_xfs_io_atomic_write
+	_have_driver raid0
+	_have_driver raid1
+	_have_driver raid10
+}
+
+_max_pow_of_two_factor() {
+	local part1=$1
+	local part2=-$1
+	local retval=$((part1 & part2))
+	echo "$retval"
+}
+
+# Find max atomic size given a boundary and chunk size
+# @unit is set if we want atomic write "unit" size, i.e power-of-2
+# @chunk must be > 0
+_md_atomics_boundaries_max() {
+	local boundary=$1
+	local chunk=$2
+	local unit=$3
+	local retval
+
+	if [ "$boundary" -eq 0 ]
+	then
+		if [ "$unit" -eq 1 ]
+		then
+			retval=$(_max_pow_of_two_factor "$chunk")
+			echo "$retval"
+			return
+		fi
+
+		echo "$chunk"
+		return
+	fi
+
+	# boundary is always a power-of-2
+	if [ "$boundary" -eq "$chunk" ]
+	then
+		echo "$boundary"
+		return
+	fi
+
+	if [ "$boundary" -gt "$chunk" ]
+	then
+		if (( boundary % chunk == 0))
+		then
+			if [ "$unit" -eq 1 ]
+			then
+				retval=$(_max_pow_of_two_factor "$chunk")
+				echo "$retval"
+				return
+			fi
+			echo "$chunk"
+			return
+		fi
+		echo "0"
+		return
+	fi
+
+	if (( chunk % boundary == 0))
+	then
+		echo "$boundary"
+		return
+	fi
+
+	echo "0"
+}
+
+declare -A MD_DEVICES
+
+_md_atomics_test() {
+	local md_sysfs_max_hw_sectors_kb
+	local md_sysfs_max_hw
+	local md_chunk_size
+	local sysfs_logical_block_size
+	local sysfs_atomic_write_max
+	local sysfs_atomic_write_unit_min
+	local sysfs_atomic_write_unit_max
+	local bytes_to_write
+	local bytes_written
+	local test_desc
+	local md_dev
+	local md_dev_sysfs
+	local raw_atomic_write_unit_min
+	local raw_atomic_write_unit_max
+	local raw_atomic_write_max
+	local raw_atomic_write_boundary
+	local raw_atomic_write_supported=1
+	local dev0=$1
+	local dev1=$2
+	local dev2=$3
+	local dev3=$4
+
+	unset MD_DEVICES
+	MD_DEVICES=([0]=$dev0 [1]=$dev1 [2]=$dev2 [3]=$dev3);
+
+	# Calculate what we expect the atomic write limits to be
+	# Don't consider any chunk size at this stage
+	# Use the limits from the first device and then loop again to find
+	# lowest common supported
+	raw_atomic_write_unit_min=$(< /sys/block/"$dev0"/queue/atomic_write_unit_min_bytes);
+	raw_atomic_write_unit_max=$(< /sys/block/"$dev0"/queue/atomic_write_unit_max_bytes);
+	raw_atomic_write_max=$(< /sys/block/"$dev0"/queue/atomic_write_max_bytes);
+	raw_atomic_write_boundary=$(< /sys/block/"$dev0"/queue/atomic_write_boundary_bytes);
+
+	for i in "${MD_DEVICES[@]}"; do
+		if [[ $(< /sys/block/"$i"/queue/atomic_write_unit_min_bytes) -gt raw_atomic_write_unit_min ]]; then
+			raw_atomic_write_unit_min=$(< /sys/block/"$i"/queue/atomic_write_unit_min_bytes)
+		fi
+		if [[ $(< /sys/block/"$i"/queue/atomic_write_unit_max_bytes) -lt raw_atomic_write_unit_max ]]; then
+			raw_atomic_write_unit_max=$(< /sys/block/"$i"/queue/atomic_write_unit_max_bytes)
+		fi
+		if [[ $(< /sys/block/"$i"/queue/atomic_write_max_bytes) -lt raw_atomic_write_max ]]; then
+			raw_atomic_write_max=$(< /sys/block/"$i"/queue/atomic_write_max_bytes)
+		fi
+		# The kernel only supports same boundary size for all devices in the array
+		if [[ $(< /sys/block/"$i"/queue/atomic_write_boundary_bytes) -ne raw_atomic_write_boundary ]]; then
+			raw_atomic_write_supported=0;
+		fi
+	done
+
+	# Check if we can support atomic writes for the array of devices given.
+	# If we cannot, then it is still worth trying to test that atomic
+	# writes don't work (as we would expect).
+
+	if [[ raw_atomic_write_supported -eq 0 ]]; then
+		raw_atomic_write_unit_min=0;
+		raw_atomic_write_unit_max=0;
+		raw_atomic_write_max=0;
+		raw_atomic_write_boundary=0;
+	fi
+
+	for personality in raid0 raid1 raid10; do
+		local step_limit
+		if [ "$personality" = raid0 ] || [ "$personality" = raid10 ]
+		then
+			step_limit=4
+		else
+			step_limit=1
+		fi
+		chunk_gran=$(( "$raw_atomic_write_unit_max" / 2))
+		if [ "$chunk_gran" -lt 4096 ]
+		then
+			chunk_gran=4096
+		fi
+
+		local chunk_multiple=1
+		for step in $(seq 1 $step_limit)
+		do
+			local expected_atomic_write_unit_min
+			local expected_atomic_write_unit_max
+			local expected_atomic_write_max
+			local expected_atomic_write_boundary
+			local atomics_boundaries_unit_max
+			local atomics_boundaries_max
+
+			# only raid0 does not require a power-of-2 chunk size
+			if [ "$personality" = raid0 ]
+			then
+				chunk_multiple=$step
+			else
+				chunk_multiple=$(( 2 * "$chunk_multiple"))
+			fi
+			md_chunk_size=$(( "$chunk_gran" * "$chunk_multiple"))
+			md_chunk_size_kb=$(( "$md_chunk_size" / 1024))
+
+			# We may reassign these for RAID0/10
+			expected_atomic_write_unit_min=$raw_atomic_write_unit_min
+			expected_atomic_write_unit_max=$raw_atomic_write_unit_max
+			expected_atomic_write_max=$raw_atomic_write_max
+			expected_atomic_write_boundary=$raw_atomic_write_boundary
+
+			if [ "$personality" = raid0 ] || [ "$personality" = raid10 ]
+			then
+				echo y | mdadm --create /dev/md/blktests_md --level=$personality \
+					 --chunk="${md_chunk_size_kb}"K \
+					--raid-devices=4 --force /dev/"${dev0}" /dev/"${dev1}" \
+					/dev/"${dev2}" /dev/"${dev3}" 2> /dev/null 1>&2
+
+				atomics_boundaries_unit_max=$(_md_atomics_boundaries_max "$raw_atomic_write_boundary" $md_chunk_size "1")
+				atomics_boundaries_max=$(_md_atomics_boundaries_max "$raw_atomic_write_boundary" "$md_chunk_size" "0")
+				expected_atomic_write_unit_min=$(_min "$expected_atomic_write_unit_min" "$atomics_boundaries_unit_max")
+				expected_atomic_write_unit_max=$(_min "$expected_atomic_write_unit_max" "$atomics_boundaries_unit_max")
+				expected_atomic_write_max=$(_min "$expected_atomic_write_max" "$atomics_boundaries_max")
+				if [ "$atomics_boundaries_max" -eq 0 ]
+				then
+					expected_atomic_write_boundary=0
+				fi
+				md_dev=$(readlink /dev/md/blktests_md | sed 's|\.\./||')
+			fi
+
+			if [ "$personality" = raid1 ]
+			then
+				echo y | mdadm --create /dev/md/blktests_md --level=$personality \
+					--raid-devices=4 --force /dev/"${dev0}" /dev/"${dev1}" \
+					/dev/"${dev2}" /dev/"${dev3}" 2> /dev/null 1>&2
+
+				md_dev=$(readlink /dev/md/blktests_md | sed 's|\.\./||')
+			fi
+
+			md_dev_sysfs="/sys/devices/virtual/block/${md_dev}"
+
+			sysfs_logical_block_size=$(< "${md_dev_sysfs}"/queue/logical_block_size)
+			md_sysfs_max_hw_sectors_kb=$(< "${md_dev_sysfs}"/queue/max_hw_sectors_kb)
+			md_sysfs_max_hw=$(( "$md_sysfs_max_hw_sectors_kb" * 1024 ))
+			sysfs_atomic_write_max=$(< "${md_dev_sysfs}"/queue/atomic_write_max_bytes)
+			sysfs_atomic_write_unit_max=$(< "${md_dev_sysfs}"/queue/atomic_write_unit_max_bytes)
+			sysfs_atomic_write_unit_min=$(< "${md_dev_sysfs}"/queue/atomic_write_unit_min_bytes)
+			sysfs_atomic_write_boundary=$(< "${md_dev_sysfs}"/queue/atomic_write_boundary_bytes)
+
+			test_desc="TEST 1 $personality step $step - Verify md sysfs atomic attributes matches"
+			if [ "$sysfs_atomic_write_unit_min" = "$expected_atomic_write_unit_min" ] &&
+				[ "$sysfs_atomic_write_unit_max" = "$expected_atomic_write_unit_max" ]
+			then
+				echo "$test_desc - pass"
+			else
+				echo "$test_desc - fail sysfs_atomic_write_unit_min=$sysfs_atomic_write_unit_min" \
+					"expected_atomic_write_unit_min=$expected_atomic_write_unit_min" \
+					"sysfs_atomic_write_unit_max=$sysfs_atomic_write_unit_max" \
+					"expected_atomic_write_unit_max=$expected_atomic_write_unit_max" \
+					"md_chunk_size=$md_chunk_size"
+			fi
+
+			test_desc="TEST 2 $personality step $step - Verify sysfs atomic attributes"
+			if [ "$md_sysfs_max_hw" -ge "$sysfs_atomic_write_max" ] &&
+				[ "$sysfs_atomic_write_unit_max" -ge "$sysfs_atomic_write_unit_min" ] &&
+				[ "$sysfs_atomic_write_max" -ge "$sysfs_atomic_write_unit_max" ]
+			then
+				echo "$test_desc - pass"
+			else
+				echo "$test_desc - fail md_sysfs_max_hw=$md_sysfs_max_hw" \
+					"sysfs_atomic_write_max=$sysfs_atomic_write_max" \
+					"sysfs_atomic_write_unit_min=$sysfs_atomic_write_unit_min" \
+					"sysfs_atomic_write_unit_max=$sysfs_atomic_write_unit_max" \
+					"md_chunk_size=$md_chunk_size"
+			fi
+
+			test_desc="TEST 3 $personality step $step - Verify md sysfs_atomic_write_max is equal to "
+			test_desc+="expected_atomic_write_max"
+			if [ "$sysfs_atomic_write_max" -eq "$expected_atomic_write_max" ]
+			then
+				echo "$test_desc - pass"
+			else
+				echo "$test_desc - fail sysfs_atomic_write_max=$sysfs_atomic_write_max" \
+					"expected_atomic_write_max=$expected_atomic_write_max" \
+					"md_chunk_size=$md_chunk_size"
+			fi
+
+			test_desc="TEST 4 $personality step $step - Verify sysfs atomic_write_unit_max_bytes =  expected_atomic_write_unit_max"
+			if [ "$sysfs_atomic_write_unit_max" = "$expected_atomic_write_unit_max" ]
+			then
+				echo "$test_desc - pass"
+			else
+				echo "$test_desc - fail sysfs_atomic_write_unit_max=$sysfs_atomic_write_unit_max" \
+					"expected_atomic_write_unit_max=$expected_atomic_write_unit_max" \
+					"md_chunk_size=$md_chunk_size"
+			fi
+
+			test_desc="TEST 5 $personality step $step - Verify sysfs atomic_write_unit_boundary_bytes = expected atomic_write_unit_boundary_bytes"
+			if [ "$sysfs_atomic_write_boundary" = "$expected_atomic_write_boundary" ]
+			then
+				echo "$test_desc - pass"
+			else
+				echo "$test_desc - fail sysfs_atomic_write_boundary=$sysfs_atomic_write_boundary" \
+					"expected_atomic_write_boundary=$expected_atomic_write_boundary"
+			fi
+
+			test_desc="TEST 6 $personality step $step - Verify statx stx_atomic_write_unit_min"
+			statx_atomic_write_unit_min=$(run_xfs_io_xstat /dev/"$md_dev" "stat.atomic_write_unit_min")
+			if [ "$statx_atomic_write_unit_min" = "$sysfs_atomic_write_unit_min" ]
+			then
+				echo "$test_desc - pass"
+			else
+				echo "$test_desc - fail statx_atomic_write_unit_min=$statx_atomic_write_unit_min" \
+					"sysfs_atomic_write_unit_min=$sysfs_atomic_write_unit_min" \
+					"md_chunk_size=$md_chunk_size"
+			fi
+
+			test_desc="TEST 7 $personality step $step - Verify statx stx_atomic_write_unit_max"
+			statx_atomic_write_unit_max=$(run_xfs_io_xstat /dev/"$md_dev" "stat.atomic_write_unit_max")
+			if [ "$statx_atomic_write_unit_max" = "$sysfs_atomic_write_unit_max" ]
+			then
+				echo "$test_desc - pass"
+			else
+				echo "$test_desc - fail statx_atomic_write_unit_max=$statx_atomic_write_unit_max" \
+					"sysfs_atomic_write_unit_max=$sysfs_atomic_write_unit_max" \
+					"md_chunk_size=$md_chunk_size"
+			fi
+
+			test_desc="TEST 8 $personality step $step - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes with "
+			test_desc+="RWF_ATOMIC flag - pwritev2 should fail"
+			if [ "$sysfs_atomic_write_unit_max" = 0 ]
+			then
+				echo "$test_desc - pass"
+			else
+				bytes_written=$(run_xfs_io_pwritev2_atomic /dev/"$md_dev" "$sysfs_atomic_write_unit_max")
+				if [ "$bytes_written" = "$sysfs_atomic_write_unit_max" ]
+				then
+					echo "$test_desc - pass"
+				else
+					echo "$test_desc - fail bytes_written=$bytes_written" \
+						"sysfs_atomic_write_unit_max=$sysfs_atomic_write_unit_max" \
+						"md_chunk_size=$md_chunk_size"
+				fi
+			fi
+
+			test_desc="TEST 9 $personality step $step - perform a pwritev2 with size of sysfs_atomic_unit_max_bytes + LBS "
+			test_desc+="bytes with RWF_ATOMIC flag - pwritev2 should not be succesful"
+			if [ "$sysfs_atomic_write_unit_max" = 0 ]
+			then
+				echo "pwrite: Invalid argument"
+				echo "$test_desc - pass"
+			else
+				bytes_to_write=$(( "${sysfs_atomic_write_unit_max}" + "${sysfs_logical_block_size}" ))
+				bytes_written=$(run_xfs_io_pwritev2_atomic /dev/"$md_dev" "$bytes_to_write")
+				if [ "$bytes_written" = "" ]
+				then
+					echo "$test_desc - pass"
+				else
+					echo "$test_desc - fail bytes_written=$bytes_written" \
+						"bytes_to_write=$bytes_to_write" \
+						"sysfs_atomic_write_unit_max=$sysfs_atomic_write_unit_max" \
+						"md_chunk_size=$md_chunk_size"
+				fi
+			fi
+
+			test_desc="TEST 10 $personality step $step - perform a pwritev2 with size of sysfs_atomic_unit_min_bytes "
+			test_desc+="with RWF_ATOMIC flag - pwritev2 should fail"
+			if [ "$sysfs_atomic_write_unit_min" = 0 ]
+			then
+				echo "$test_desc - pass"
+			else
+				bytes_written=$(run_xfs_io_pwritev2_atomic /dev/"$md_dev" "$sysfs_atomic_write_unit_min")
+				if [ "$bytes_written" = "$sysfs_atomic_write_unit_min" ]
+				then
+					echo "$test_desc - pass"
+				else
+					echo "$test_desc - fail bytes_written=$bytes_written" \
+						"sysfs_atomic_write_unit_min=$sysfs_atomic_write_unit_min" \
+						"md_chunk_size=$md_chunk_size"
+				fi
+			fi
+
+			test_desc="TEST 11 $personality step $step - perform a pwritev2 with a size of sysfs_atomic_write_unit_max_bytes - LBS "
+			test_desc+="bytes with RWF_ATOMIC flag - pwritev2 should fail"
+			if [ "${sysfs_atomic_write_unit_max}" -le "${sysfs_logical_block_size}" ]
+			then
+				echo "pwrite: Invalid argument"
+				echo "$test_desc - pass"
+			else
+				bytes_to_write=$(( "${sysfs_atomic_write_unit_max}" - "${sysfs_logical_block_size}" ))
+				bytes_written=$(run_xfs_io_pwritev2_atomic /dev/"$md_dev" "$bytes_to_write")
+				if [ "$bytes_written" = "" ]
+				then
+					echo "$test_desc - pass"
+				else
+					echo "$test_desc - fail bytes_written=$bytes_written" \
+						"bytes_to_write=$bytes_to_write" \
+						"md_chunk_size=$md_chunk_size"
+				fi
+			fi
+
+			if [ "$personality" = raid0 ] || [ "$personality" = raid1 ] || [ "$personality" = raid10 ]
+			then
+				mdadm --stop /dev/md/blktests_md  2> /dev/null 1>&2
+
+				for i in "${MD_DEVICES[@]}"; do
+					mdadm --zero-superblock /dev/"$i" 2> /dev/null 1>&2
+				done
+			fi
+		done
+	done
 }
