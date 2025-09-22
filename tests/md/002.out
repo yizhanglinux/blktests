@@ -1,4 +1,4 @@
-Running md/002
+Running md_atomics_test
 TEST 1 raid0 step 1 - Verify md sysfs atomic attributes matches - pass
 TEST 2 raid0 step 1 - Verify sysfs atomic attributes - pass
 TEST 3 raid0 step 1 - Verify md sysfs_atomic_write_max is equal to expected_atomic_write_max - pass

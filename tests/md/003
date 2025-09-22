@@ -1,0 +1,35 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2025 Oracle and/or its affiliates
+#
+# Test NMVe Atomic Writes with MD devices
+
+. tests/md/rc
+. common/nvme
+. common/xfs
+
+DESCRIPTION="test md atomic writes for NVMe drives"
+QUICK=1
+
+requires() {
+	_nvme_requires
+	_stacked_atomic_test_requires
+}
+
+device_requires() {
+	_require_test_dev_is_nvme
+}
+
+test_device_array() {
+	echo "Running md_atomics_test"
+
+	if [[ ${#TEST_DEV_ARRAY[@]} -lt 4 ]]; then
+		SKIP_REASONS+=("requires at least 4 NVMe devices")
+		return 1
+	fi
+
+	_md_atomics_test "${TEST_DEV_ARRAY[0]##*/}" "${TEST_DEV_ARRAY[1]##*/}" \
+			 "${TEST_DEV_ARRAY[2]##*/}" "${TEST_DEV_ARRAY[3]##*/}"
+
+	echo "Test complete"
+}

@@ -25,7 +25,7 @@ test() {
 		per_host_store=true
 	)
 
-	echo "Running ${TEST_NAME}"
+	echo "Running md_atomics_test"
 
 	if ! _configure_scsi_debug "${scsi_debug_params[@]}"; then
 		return 1
