@@ -19,6 +19,9 @@ _stacked_atomic_test_requires() {
 	_have_driver raid0
 	_have_driver raid1
 	_have_driver raid10
+	_have_driver dm-mod
+	_have_program vgcreate
+	_have_program lvm
 }
 
 _max_pow_of_two_factor() {
@@ -85,6 +88,13 @@ _md_atomics_boundaries_max() {
 
 declare -A MD_DEVICES
 
+_get_vgsize() {
+	local vgsize
+
+	vgsize=$(vgdisplay --units b blktests_vg00 | grep 'VG Size' | tr -d -c 0-9)
+	echo "$vgsize"
+}
+
 _md_atomics_test() {
 	local md_sysfs_max_hw_sectors_kb
 	local md_sysfs_max_hw
@@ -147,7 +157,7 @@ _md_atomics_test() {
 		raw_atomic_write_boundary=0;
 	fi
 
-	for personality in raid0 raid1 raid10; do
+	for personality in raid0 raid1 raid10 dm-linear; do
 		local step_limit
 		if [ "$personality" = raid0 ] || [ "$personality" = raid10 ]
 		then
@@ -213,6 +223,26 @@ _md_atomics_test() {
 					/dev/"${dev2}" /dev/"${dev3}" 2> /dev/null 1>&2
 
 				md_dev=$(readlink /dev/md/blktests_md | sed 's|\.\./||')
+			fi
+
+			if [ "$personality" = dm-linear ]
+			then
+				for i in "${MD_DEVICES[@]}"; do
+					pvremove --force /dev/"$i" 2> /dev/null 1>&2
+					pvcreate /dev/"$i" 2> /dev/null 1>&2
+				done
+
+				echo y | vgcreate blktests_vg00 /dev/"${dev0}" /dev/"${dev1}" \
+						/dev/"${dev2}" /dev/"${dev3}" 2> /dev/null 1>&2
+			fi
+
+			if [ "$personality" = dm-linear ]
+			then
+				local vgsize
+
+				vgsize=$(_get_vgsize)
+				echo y | lvm lvcreate -v -n blktests_lv -L "${vgsize}"B blktests_vg00 2> /dev/null 1>&2
+				md_dev=$(readlink /dev/mapper/blktests_vg00-blktests_lv | sed 's|\.\./||')
 			fi
 
 			md_dev_sysfs="/sys/devices/virtual/block/${md_dev}"
@@ -383,6 +413,15 @@ _md_atomics_test() {
 
 				for i in "${MD_DEVICES[@]}"; do
 					mdadm --zero-superblock /dev/"$i" 2> /dev/null 1>&2
+				done
+			fi
+
+			if [ "$personality" = dm-linear ]
+			then
+				lvremove --force  /dev/mapper/blktests_vg00-blktests_lv  2> /dev/null 1>&2
+				vgremove --force blktests_vg00 2> /dev/null 1>&2
+				for i in "${MD_DEVICES[@]}"; do
+					pvremove --force /dev/"$i" 2> /dev/null 1>&2
 				done
 			fi
 		done
