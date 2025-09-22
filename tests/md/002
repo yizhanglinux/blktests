@@ -23,7 +23,7 @@ test() {
 		num_tgts=1
 		add_host=4
 		per_host_store=true
-		dev_size_mb=5
+		dev_size_mb=16
 	)
 
 	echo "Running md_atomics_test"

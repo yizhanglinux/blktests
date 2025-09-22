@@ -20,6 +20,7 @@ _stacked_atomic_test_requires() {
 	_have_driver raid1
 	_have_driver raid10
 	_have_driver dm-mod
+	_have_driver dm-mirror
 	_have_program vgcreate
 	_have_program lvm
 }
@@ -157,8 +158,7 @@ _md_atomics_test() {
 		raw_atomic_write_boundary=0;
 	fi
 
-
-	for personality in raid0 raid1 raid10 dm-linear dm-stripe; do
+	for personality in raid0 raid1 raid10 dm-linear dm-stripe dm-mirror; do
 		local step_limit
 		if [ "$personality" = raid0 ] || [ "$personality" = raid10 ] || \
 		    [ "$personality" = dm-stripe ]
@@ -227,7 +227,8 @@ _md_atomics_test() {
 				md_dev=$(readlink /dev/md/blktests_md | sed 's|\.\./||')
 			fi
 
-			if [ "$personality" = dm-linear ] || [ "$personality" = dm-stripe ]
+			if [ "$personality" = dm-linear ] || [ "$personality" = dm-stripe ] || \
+				[ "$personality" = dm-mirror ]
 			then
 				for i in "${MD_DEVICES[@]}"; do
 					pvremove --force /dev/"$i" 2> /dev/null 1>&2
@@ -263,6 +264,13 @@ _md_atomics_test() {
 
 				vgsize=$(_get_vgsize)
 				echo y | lvm lvcreate -v -n blktests_lv -L "${vgsize}"B blktests_vg00 2> /dev/null 1>&2
+				md_dev=$(readlink /dev/mapper/blktests_vg00-blktests_lv | sed 's|\.\./||')
+			fi
+
+			if [ "$personality" = dm-mirror ]
+			then
+				echo y | lvm lvcreate --type mirror -m3  -L 2M -n blktests_lv blktests_vg00 2> /dev/null 1>&2
+
 				md_dev=$(readlink /dev/mapper/blktests_vg00-blktests_lv | sed 's|\.\./||')
 			fi
 
@@ -437,7 +445,8 @@ _md_atomics_test() {
 				done
 			fi
 
-			if [ "$personality" = dm-linear ] || [ "$personality" = dm-stripe ]
+			if [ "$personality" = dm-linear ] || [ "$personality" = dm-stripe ] || \
+				[ "$personality" = dm-mirror ]
 			then
 				lvremove --force  /dev/mapper/blktests_vg00-blktests_lv  2> /dev/null 1>&2
 				vgremove --force blktests_vg00 2> /dev/null 1>&2
