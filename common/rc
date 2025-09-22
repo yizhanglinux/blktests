@@ -701,3 +701,14 @@ _real_dev()
 	fi
 	echo "$dev"
 }
+
+_min() {
+	local ret
+
+	for arg in "$@"; do
+		if [ -z "$ret" ] || (( arg < ret )); then
+			ret="$arg"
+		fi
+	done
+	echo "$ret"
+}
