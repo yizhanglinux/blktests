@@ -22,6 +22,6 @@ check:
 		tests/*/rc tests/*/[0-9]*[0-9] src/*.sh
 	shellcheck --exclude=$(SHELLCHECK_EXCLUDE),SC2154 --format=gcc new
 	! grep TODO tests/*/rc tests/*/[0-9]*[0-9]
-	! find -name '*.out' -perm /u=x+g=x+o=x -printf '%p is executable\n' | grep .
+	! find -L -name '*.out' -perm /u=x+g=x+o=x -printf '%p is executable\n' | grep .
 
 .PHONY: all check install
