@@ -252,12 +252,25 @@ _output_notrun() {
 	_output_skip_reasons
 }
 
-_output_last_test_run() {
+_output_test_name() {
+	local dev
+	local -a devs
+	local status="$1"
+
 	if [[ "${TEST_DEV:-}" ]]; then
-		_output_status "$TEST_NAME => $(basename "$TEST_DEV")" ""
+		_output_status "$TEST_NAME => $(basename "$TEST_DEV")" "$status"
+	elif [[ "${TEST_DEV_ARRAY:-}" ]]; then
+		for dev in "${TEST_DEV_ARRAY[@]}"; do
+			devs+=("${dev##*/}")
+		done
+		_output_status "$TEST_NAME => ${devs[*]}" "$status"
 	else
-		_output_status "$TEST_NAME" ""
+		_output_status "$TEST_NAME" "$status"
 	fi
+}
+
+_output_last_test_run() {
+	_output_test_name ""
 
 	{
 	local key
@@ -277,11 +290,7 @@ _output_test_run() {
 	if [[ $status = pass || $status = fail ]]; then
 		status+="ed"
 	fi
-	if [[ "${TEST_DEV:-}" ]]; then
-		_output_status "$TEST_NAME => $(basename "$TEST_DEV")" "$status"
-	else
-		_output_status "$TEST_NAME" "$status"
-	fi
+	_output_test_name "$status"
 
 	{
 	local key last_value value
