@@ -198,16 +198,29 @@ _have_kernel_config_file() {
 	return 0
 }
 
-# Check if the specified kernel option is defined.
-_check_kernel_option() {
-	local f opt=$1
+# Retrieve the value of kernel option $1.
+_get_kernel_option() {
+	local f opt=$1 result
 
 	for f in /proc/config.gz /boot/config-$(uname -r); do
 		[ -e "$f" ] || continue
-		if zgrep -q "^CONFIG_${opt}=[my]$" "$f"; then
+		if result=$(zgrep "^CONFIG_${opt}=" "$f"); then
+			echo "${result#*=}"
 			return 0
 		fi
 	done
+
+	return 1
+}
+
+# Check if kernel option $1 is defined.
+_check_kernel_option() {
+	local value
+
+	case "$(_get_kernel_option "$1")" in
+		y|m)
+			return 0;;
+	esac
 
 	return 1
 }
