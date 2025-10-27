@@ -213,7 +213,7 @@ _check_kernel_option() {
 }
 
 # Combine _have_kernel_config_file() and _check_kernel_option().
-# Set SKIP_RESAON when _check_kernel_option() returns false.
+# Set SKIP_REASONS when _check_kernel_option() returns false.
 _have_kernel_option() {
 	local opt=$1
 
