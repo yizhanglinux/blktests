@@ -6,21 +6,26 @@
 
 . common/rc
 . common/null_blk
+. common/scsi_debug
 . common/cgroup
 
 THROTL_DIR=$(echo "$TEST_NAME" | tr '/' '_')
-THROTL_DEV=dev_nullb
+throtl_blkdev_type=${throtl_blkdev_type:-"nullb"}
+THROTL_NULL_DEV=dev_nullb
+declare THROTL_DEV
 declare THROTL_CLEAR_BASE_SUBTREE_CONTROL_IO
 declare THROTL_CLEAR_CGROUP2_DIR_CONTROL_IO
 
 group_requires() {
 	_have_root
 	_have_null_blk
+	_have_scsi_debug
 	_have_kernel_option BLK_DEV_THROTTLING
 	_have_cgroup2_controller io
 	_have_program bc
 }
 
+# Prepare null_blk or scsi_debug device to test, based on throtl_blkdev_type.
 _configure_throtl_blkdev() {
 	local sector_size=0 memory_backed=0
 	local -a args
@@ -42,21 +47,53 @@ _configure_throtl_blkdev() {
 		esac
 	done
 
-	args=("$THROTL_DEV")
-	((sector_size)) && args+=(max_sectors="$((sector_size / 512))")
-	((memory_backed)) && args+=(memory_backed=1)
-	if _configure_null_blk "${args[@]}" power=1; then
-		return
-	fi
+	THROTL_DEV=
+	case "$throtl_blkdev_type" in
+	nullb)
+		args=("$THROTL_NULL_DEV")
+		((sector_size)) && args+=(max_sectors="$((sector_size / 512))")
+		((memory_backed)) && args+=(memory_backed=1)
+		if _configure_null_blk "${args[@]}" power=1; then
+			THROTL_DEV=$THROTL_NULL_DEV
+			return
+		fi
+		;;
+	sdebug)
+		args=(dev_size_mb=1024)
+		((sector_size)) && args+=(sector_size="${sector_size}")
+		if _configure_scsi_debug "${args[@]}"; then
+			THROTL_DEV=${SCSI_DEBUG_DEVICES[0]}
+			return
+		fi
+		;;
+	*)
+		echo "Invalid block device type: ${throtl_blkdev_type}" ;;
+	esac
 	return 1
 }
 
 _delete_throtl_blkdev() {
-	echo 0 > "/sys/kernel/config/nullb/$THROTL_DEV/power"
+	case "$throtl_blkdev_type" in
+	nullb)
+		echo 0 > "/sys/kernel/config/nullb/$THROTL_DEV/power"
+		;;
+	sdebug)
+		echo 1 > "/sys/block/$THROTL_DEV/device/delete"
+		;;
+	*)
+		echo "Invalid block device type: ${throtl_blkdev_type}" ;;
+	esac
 }
 
 _exit_throtl_blkdev() {
-	_exit_null_blk
+	case "$throtl_blkdev_type" in
+	nullb)
+		_exit_null_blk ;;
+	sdebug)
+		_exit_scsi_debug ;;
+	*)
+		echo "Invalid block device type: ${throtl_blkdev_type}" ;;
+	esac
 	unset THROTL_DEV
 }
 
@@ -101,12 +138,12 @@ _clean_up_throtl() {
 }
 
 _throtl_set_limits() {
-	echo "$(cat /sys/block/$THROTL_DEV/dev) $*" > \
+	echo "$(cat /sys/block/"$THROTL_DEV"/dev) $*" > \
 		"$CGROUP2_DIR/$THROTL_DIR/io.max"
 }
 
 _throtl_remove_limits() {
-	echo "$(cat /sys/block/$THROTL_DEV/dev) rbps=max wbps=max riops=max wiops=max" > \
+	echo "$(cat /sys/block/"$THROTL_DEV"/dev) rbps=max wbps=max riops=max wiops=max" > \
 		"$CGROUP2_DIR/$THROTL_DIR/io.max"
 }
 
@@ -145,9 +182,9 @@ _throtl_issue_io() {
 	start_time=$(date +%s.%N)
 
 	if [ "$1" == "read" ]; then
-		dd if=/dev/$THROTL_DEV of=/dev/null bs="$2" count="$3" iflag=direct status=none
+		dd if=/dev/"$THROTL_DEV" of=/dev/null bs="$2" count="$3" iflag=direct status=none
 	elif [ "$1" == "write" ]; then
-		dd of=/dev/$THROTL_DEV if=/dev/zero bs="$2" count="$3" oflag=direct status=none
+		dd of=/dev/"$THROTL_DEV" if=/dev/zero bs="$2" count="$3" oflag=direct status=none
 	fi
 
 	end_time=$(date +%s.%N)
