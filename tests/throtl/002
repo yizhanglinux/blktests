@@ -24,7 +24,10 @@ test() {
 	fi
 
 	io_size_kb=$(($(_throtl_get_max_io_size) * 1024))
-	block_size=$((iops * io_size_kb))
+	if [ "${io_size_kb}" -gt "${page_size}" ]; then
+		_throtl_set_max_io_size $((page_size / 1024))
+	fi
+	block_size=$((iops * page_size))
 
 	_throtl_set_limits wiops="${iops}"
 	_throtl_test_io write "${block_size}" 1

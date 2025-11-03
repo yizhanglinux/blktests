@@ -114,6 +114,10 @@ _throtl_get_max_io_size() {
 	cat "/sys/block/$THROTL_DEV/queue/max_sectors_kb"
 }
 
+_throtl_set_max_io_size() {
+	echo "$1" > "/sys/block/$THROTL_DEV/queue/max_sectors_kb"
+}
+
 _throtl_issue_fs_io() {
 	local path=$1
 	local start_time
