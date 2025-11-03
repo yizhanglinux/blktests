@@ -11,6 +11,10 @@
 DESCRIPTION="bps limit with iops limit over io split"
 QUICK=1
 
+set_conditions() {
+	_set_throtl_blkdev_type "$@"
+}
+
 test() {
 	echo "Running ${TEST_NAME}"
 

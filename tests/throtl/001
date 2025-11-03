@@ -9,6 +9,10 @@
 DESCRIPTION="basic functionality"
 QUICK=1
 
+set_conditions() {
+	_set_throtl_blkdev_type "$@"
+}
+
 test() {
 	echo "Running ${TEST_NAME}"
 

@@ -15,6 +15,10 @@ requires() {
 	_have_driver ext4
 }
 
+set_conditions() {
+	_set_throtl_blkdev_type "$@"
+}
+
 test_meta_io() {
 	local path="$1"
 	local start_time

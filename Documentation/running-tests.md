@@ -167,6 +167,23 @@ USE_RXE=1 ./check srp/
 'USE_RXE' had the old name 'use_rxe'. The old name is still usable but not
 recommended.
 
+### Blk-throttle tests
+
+The blk-throttle tests has one environment variable below:
+
+- THROTL_BLKDEV_TYPES: 'nullb' 'sdebug'
+  Set up test target block device based on this environment variable value. To
+  test with null_blk, set 'nullb'. To test with scsi_debug, set 'sdebug'. To
+  test with both, set 'nullb sdebug'. Default value is 'nullb sdebug'.
+
+```sh
+To run with scsi_debug:
+THROTL_BLKDEV_TYPES="sdebug" ./check throtl/
+
+To run with both null_blk and scsi_debug:
+THROTL_BLKDEV_TYPES="nullb sdebug" ./check throtl/
+```
+
 ### Normal user
 
 To run test cases which require normal user privilege, prepare a user and
