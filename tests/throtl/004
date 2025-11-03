@@ -22,7 +22,7 @@ test() {
 
 	{
 		echo "$BASHPID" > "$CGROUP2_DIR/$THROTL_DIR/cgroup.procs"
-		_throtl_issue_io write 10M 1
+		_throtl_issue_io write 10M 1 &>> "$FULL"
 	} &
 
 	sleep 0.6
@@ -30,5 +30,7 @@ test() {
 	wait $!
 
 	_clean_up_throtl
+
+	grep --only-matching "Input/output error" "$FULL"
 	echo "Test complete"
 }
