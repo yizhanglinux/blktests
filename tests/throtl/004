@@ -26,7 +26,7 @@ test() {
 	} &
 
 	sleep 0.6
-	echo 0 > "/sys/kernel/config/nullb/$THROTL_DEV/power"
+	_delete_throtl_blkdev
 	wait $!
 
 	_clean_up_throtl

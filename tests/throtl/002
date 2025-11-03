@@ -13,14 +13,13 @@ QUICK=1
 test() {
 	echo "Running ${TEST_NAME}"
 
-	local page_size max_secs
+	local page_size
 	local io_size_kb block_size
 	local iops=256
 
 	page_size=$(getconf PAGE_SIZE)
-	max_secs=$((page_size / 512))
 
-	if ! _set_up_throtl max_sectors="${max_secs}"; then
+	if ! _set_up_throtl --sector_size "${page_size}"; then
 		return 1;
 	fi
 

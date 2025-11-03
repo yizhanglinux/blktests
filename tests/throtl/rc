@@ -21,15 +21,54 @@ group_requires() {
 	_have_program bc
 }
 
+_configure_throtl_blkdev() {
+	local sector_size=0 memory_backed=0
+	local -a args
+
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+			--sector_size)
+				sector_size="$2"
+				shift 2
+				;;
+			--memory_backed)
+				memory_backed=1
+				shift
+				;;
+			*)
+				echo "WARNING: unknown argument: $1"
+				shift
+				;;
+		esac
+	done
+
+	args=("$THROTL_DEV")
+	((sector_size)) && args+=(max_sectors="$((sector_size / 512))")
+	((memory_backed)) && args+=(memory_backed=1)
+	if _configure_null_blk "${args[@]}" power=1; then
+		return
+	fi
+	return 1
+}
+
+_delete_throtl_blkdev() {
+	echo 0 > "/sys/kernel/config/nullb/$THROTL_DEV/power"
+}
+
+_exit_throtl_blkdev() {
+	_exit_null_blk
+	unset THROTL_DEV
+}
+
 # Create a new null_blk device, and create a new blk-cgroup for test.
 _set_up_throtl() {
 
-	if ! _configure_null_blk $THROTL_DEV "$@" power=1; then
+	if ! _configure_throtl_blkdev "$@"; then
 		return 1
 	fi
 
 	if ! _init_cgroup2; then
-		_exit_null_blk
+		_exit_throtl_blkdev
 		return 1
 	fi
 
@@ -58,7 +97,7 @@ _clean_up_throtl() {
 	fi
 
 	_exit_cgroup2
-	_exit_null_blk
+	_exit_throtl_blkdev
 }
 
 _throtl_set_limits() {

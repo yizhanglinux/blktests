@@ -34,7 +34,7 @@ test_meta_io() {
 test() {
 	echo "Running ${TEST_NAME}"
 
-	if ! _set_up_throtl memory_backed=1; then
+	if ! _set_up_throtl --memory_backed; then
 		return 1;
 	fi
 
