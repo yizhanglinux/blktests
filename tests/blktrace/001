@@ -1,0 +1,90 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2025 Chaitanya Kulkarni <ckulkarnilinux@gmail.com>
+#
+# Regression test for blktrace false positive WARNING on zone management
+# commands.
+#
+# Bug: https://syzkaller.appspot.com/bug?extid=153e64c0aa875d7e4c37
+# Location: kernel/trace/blktrace.c:367-368
+#
+# The bug triggers a WARNING when zone management commands (zone open/close/
+# finish/reset) are traced with blktrace on V1 version. This is a false
+# positive that should be fixed.
+
+. tests/blktrace/rc
+. common/null_blk
+
+DESCRIPTION="blktrace zone management command tracing"
+QUICK=1
+
+requires() {
+	_have_program blkzone
+	_have_null_blk
+	_have_module_param null_blk zoned
+}
+
+test() {
+	echo "Running ${TEST_NAME}"
+
+	local blktrace_pid
+	local warning_count
+	local device
+
+	# Create zoned null_blk device via configfs
+	# 8 zones, 1GB total, 128MB per zone, no conventional zones
+	if ! _configure_null_blk nullb1 \
+		memory_backed=1 \
+		zone_size=128 \
+		zone_nr_conv=0 \
+		size=1024 \
+		zoned=1 \
+		power=1; then
+		return 1
+	fi
+
+	device=/dev/nullb1
+
+	# Verify it's a zoned device
+	local zoned_mode
+	zoned_mode=$(cat /sys/block/nullb1/queue/zoned)
+	if [[ "$zoned_mode" != "host-managed" ]]; then
+		echo "Device is not zoned (mode: $zoned_mode)"
+		_exit_null_blk
+		return 1
+	fi
+
+	# Start blktrace
+	blktrace --dev="${device}" --output=trace --output-dir="$TMPDIR" \
+		>> "$FULL" 2>&1 &
+	blktrace_pid=$!
+	sleep 2
+
+	# Verify blktrace started
+	if ! ps -p $blktrace_pid > /dev/null 2>&1; then
+		echo "blktrace failed to start"
+		_exit_null_blk
+		return 1
+	fi
+
+	# Issue zone open command for all zones (triggers bug if present)
+	blkzone open "${device}" >> "$FULL" 2>&1
+
+	sleep 1
+
+	# Stop blktrace
+	kill $blktrace_pid 2>/dev/null
+	wait $blktrace_pid 2>/dev/null
+
+	# Check for WARNING (bug present if WARNING found)
+	warning_count=$(_dmesg_since_test_start | grep -c "WARNING.*blktrace.c:367" || true)
+
+	if [[ $warning_count -gt 0 ]]; then
+		echo "WARNING: blktrace bug detected at blktrace.c:367"
+		_dmesg_since_test_start | grep -A 10 "WARNING.*blktrace.c:367" >> "$FULL"
+	fi
+
+	_exit_null_blk
+
+	echo "Test complete"
+}

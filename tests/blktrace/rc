@@ -1,0 +1,13 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2025 Chaitanya Kulkarni <ckulkarnilinux@gmail.com>
+#
+# Tests for blktrace infrastructure
+
+. common/rc
+
+group_requires() {
+	_have_root
+	_have_blktrace
+	_have_program blkparse
+}
