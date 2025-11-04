@@ -1,0 +1,97 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2025 Chaitanya Kulkarni <ckulkarnilinux@gmail.com>
+#
+# Regression test for blktrace ftrace corruption bug when using sysfs
+# trace enable with ftrace blk tracer.
+#
+# Bug: When sysfs trace is enabled (/sys/block/*/trace/enable) and then
+# ftrace blk tracer is enabled, the trace output becomes corrupted showing
+# "Unknown action" with invalid hex values.
+#
+# Root cause: ftrace allocated blk_io_trace2 buffer (64 bytes) but called
+# record_blktrace_event() which writes v1 format (48 bytes), causing field
+# offset mismatches and corruption.
+
+. tests/blktrace/rc
+. common/null_blk
+
+DESCRIPTION="blktrace ftrace corruption with sysfs trace"
+QUICK=1
+
+requires() {
+	_have_null_blk
+	_have_tracefs
+}
+
+test() {
+	echo "Running ${TEST_NAME}"
+
+	local trace_dir="/sys/kernel/debug/tracing"
+	local device
+
+	# Initialize null_blk with one device
+	if ! _configure_null_blk nullb1 power=1; then
+		return 1
+	fi
+
+	device=/dev/nullb1
+
+	# Verify device exists
+	if [[ ! -b "$device" ]]; then
+		echo "Device $device not found"
+		_exit_null_blk
+		return 1
+	fi
+
+	# Clean up any previous trace state
+	echo 0 > "$trace_dir/tracing_on" 2>/dev/null
+	echo > "$trace_dir/trace" 2>/dev/null
+	echo nop > "$trace_dir/current_tracer" 2>/dev/null
+
+	# Enable sysfs trace for nullb1 (this triggers the bug path)
+	if [[ -f /sys/block/nullb1/trace/enable ]]; then
+		echo 1 > /sys/block/nullb1/trace/enable
+	else
+		echo "No sysfs trace support"
+		_exit_null_blk
+		return 1
+	fi
+
+	# Enable blk ftrace tracer
+	echo blk > "$trace_dir/current_tracer"
+	echo 1 > "$trace_dir/tracing_on"
+
+	# Generate some I/O
+	dd if="$device" of=/dev/null bs=4k count=10 iflag=direct >> "$FULL" 2>&1
+
+	# Stop tracing
+	echo 0 > "$trace_dir/tracing_on"
+
+	# Check trace output for corruption
+	# Get first 10 non-comment lines
+	local trace_output
+	trace_output=$(grep -v "^#" "$trace_dir/trace" | head -10)
+
+	if [[ -z "$trace_output" ]]; then
+		echo "No trace output captured"
+		_exit_null_blk
+		return 1
+	fi
+
+	# Check for "Unknown action" which indicates the bug
+	if echo "$trace_output" | grep -q "Unknown action"; then
+		echo "BUG: Trace corruption detected with 'Unknown action'"
+		echo "$trace_output" | head -5 >> "$FULL"
+	else
+		echo "Trace output looks correct"
+	fi
+
+	# Cleanup: disable sysfs trace
+	echo 0 > /sys/block/nullb1/trace/enable 2>/dev/null
+	echo nop > "$trace_dir/current_tracer" 2>/dev/null
+
+	_exit_null_blk
+
+	echo "Test complete"
+}
