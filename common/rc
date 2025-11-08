@@ -237,6 +237,16 @@ _have_kernel_option() {
 	return 0
 }
 
+_have_kernel_options() {
+	local ret=0
+
+	for opt in "$@"; do
+		_have_kernel_option "$opt" || ret=1
+	done
+
+	return $ret
+}
+
 # Compare the version string in $1 in "a.b.c" format with "$2.$3.$4".
 # If "a.b.c" is smaller than "$2.$3.$4", return true. Otherwise, return
 # false.
