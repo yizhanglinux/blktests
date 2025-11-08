@@ -13,8 +13,7 @@ requires() {
 	_nvme_requires
 	_have_fio
 	_have_loop
-	_have_kernel_option NVME_AUTH
-	_have_kernel_option NVME_TARGET_AUTH
+	_have_kernel_options NVME_AUTH NVME_TARGET_AUTH
 	_require_kernel_nvme_fabrics_feature dhchap_ctrl_secret
 	_require_nvme_trtype_is_fabrics
 	_require_nvme_cli_auth

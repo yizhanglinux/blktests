@@ -12,8 +12,7 @@ QUICK=1
 requires() {
 	_nvme_requires
 	_have_loop
-	_have_kernel_option NVME_TCP_TLS
-	_have_kernel_option NVME_TARGET_TCP_TLS
+	_have_kernel_options NVME_TCP_TLS NVME_TARGET_TCP_TLS
 	_require_kernel_nvme_fabrics_feature tls
 	_require_nvme_trtype tcp
 	_require_nvme_cli_tls
