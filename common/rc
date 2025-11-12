@@ -215,8 +215,6 @@ _get_kernel_option() {
 
 # Check if kernel option $1 is defined.
 _check_kernel_option() {
-	local value
-
 	case "$(_get_kernel_option "$1")" in
 		y|m)
 			return 0;;
