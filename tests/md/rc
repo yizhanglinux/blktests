@@ -92,7 +92,7 @@ declare -A MD_DEVICES
 _get_vgsize() {
 	local vgsize
 
-	vgsize=$(vgdisplay --units b blktests_vg00 | grep 'VG Size' | tr -d -c 0-9)
+	vgsize=$(vgdisplay --units b blktests_vg00 2> /dev/null | grep 'VG Size' | tr -d -c 0-9)
 	echo "$vgsize"
 }
 
