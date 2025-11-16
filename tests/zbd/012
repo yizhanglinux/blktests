@@ -29,6 +29,9 @@ toggle_iosched() {
 test() {
 	echo "Running ${TEST_NAME}"
 
+	# enable io_uring when it is disabled
+	_io_uring_enable
+
 	for qd in 1 2 4 8 16; do
 		echo "$qd"
 		local scsi_debug_params=(
@@ -74,6 +77,9 @@ test() {
 		_exit_scsi_debug >>"${FULL}" 2>&1
 		[ -z "$fail" ] || break
 	done
+
+	# reset io_uring setting before exits test
+	_io_uring_restore
 
 	if [ -z "$fail" ]; then
 		echo "Test complete"

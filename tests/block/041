@@ -48,6 +48,9 @@ test_device() {
 	bs=$(_min_io "$TEST_DEV")
 	md_per_io_size=$((bs * lbmd_size / lbmd_interval))
 
+	# enable io_uring when it is disabled
+	_io_uring_enable
+
 	local fio_args=(
 		--name=pi_read_test
 		--filename="$TEST_DEV"
@@ -67,5 +70,9 @@ test_device() {
 	)
 
 	_run_fio "${fio_args[@]}"
+
+	# reset io_uring setting before exits test
+	_io_uring_restore
+
 	echo "Test complete"
 }

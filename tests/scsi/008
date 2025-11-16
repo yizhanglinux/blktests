@@ -61,6 +61,10 @@ test() {
 	local scsi_debug_params=(
 		delay=0
 	)
+
+	# enable io_uring when it is disabled
+	_io_uring_enable
+
 	_configure_scsi_debug "${scsi_debug_params[@]}" &&
 	local dev="/dev/${SCSI_DEBUG_DEVICES[0]}" fail &&
 	ls -ldi "${dev}" >>"${FULL}" &&
@@ -71,6 +75,9 @@ test() {
 	fail=true
 
 	_exit_scsi_debug
+
+	# reset io_uring setting before exits test
+	_io_uring_restore
 
 	if [ -z "$fail" ]; then
 		echo "Test complete"
