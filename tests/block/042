@@ -1,0 +1,28 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-2.0
+# Copyright 2025 Keith Busch <kbusch@kernel.org>
+
+. tests/block/rc
+
+DESCRIPTION="Test unusual direct-io offsets"
+QUICK=1
+
+device_requires() {
+        _require_test_dev_sysfs
+}
+
+test_device() {
+	echo "Running ${TEST_NAME}"
+
+	sys_max_segments=$(cat "${TEST_DEV_SYSFS}/queue/max_segments")
+	sys_dma_alignment=$(cat "${TEST_DEV_SYSFS}/queue/dma_alignment")
+	sys_virt_boundary_mask=$(cat "${TEST_DEV_SYSFS}/queue/virt_boundary_mask")
+	sys_logical_block_size=$(cat "${TEST_DEV_SYSFS}/queue/logical_block_size")
+	sys_max_sectors_kb=$(cat "${TEST_DEV_SYSFS}/queue/max_sectors_kb")
+
+	if ! src/dio-offsets ${TEST_DEV} $sys_max_segments $sys_max_sectors_kb $sys_dma_alignment $sys_virt_boundary_mask $sys_logical_block_size; then
+		echo "src/dio-offsets failed"
+	fi
+
+	echo "Test complete"
+}

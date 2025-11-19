@@ -9,6 +9,7 @@ HAVE_C_MACRO = $(shell if echo "$(H)include <$(1)>" |	\
 		then echo 1;else echo 0; fi)
 
 C_TARGETS := \
+	dio-offsets \
 	loblksize \
 	loop_change_fd \
 	loop_get_status_null \
