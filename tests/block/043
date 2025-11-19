@@ -1,0 +1,33 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-2.0
+# Copyright 2025 Keith Busch <kbusch@kernel.org>
+#
+# Tests various user space metadata offsets with io_uring capabilities. If the
+# format uses ref tag protection, test various seed offsets as well.
+
+. tests/block/rc
+. common/nvme
+
+DESCRIPTION="Test userspace metadata offsets"
+QUICK=1
+
+device_requires() {
+	_test_dev_has_metadata
+	_test_dev_disables_extended_lba
+}
+
+requires() {
+	_have_kernel_option IO_URING
+	_have_kernel_option BLK_DEV_INTEGRITY
+}
+
+test_device() {
+	echo "Running ${TEST_NAME}"
+
+	if ! src/metadata ${TEST_DEV}; then
+		echo "src/metadata failed"
+	fi
+
+	echo "Test complete"
+}
+

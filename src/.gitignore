@@ -3,6 +3,7 @@
 /loblksize
 /loop_change_fd
 /loop_get_status_null
+/metadata
 /mount_clear_sock
 /nbdsetsize
 /openclose
