@@ -24,7 +24,7 @@ requires() {
 test_device() {
 	echo "Running ${TEST_NAME}"
 
-	if ! src/metadata ${TEST_DEV}; then
+	if ! src/metadata "${TEST_DEV}"; then
 		echo "src/metadata failed"
 	fi
 
