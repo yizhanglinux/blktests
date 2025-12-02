@@ -40,7 +40,7 @@ static int test_fd;
 
 static void init_args(char **argv)
 {
-	test_fd = open(argv[1], O_RDWR | O_CREAT | O_TRUNC | O_DIRECT);
+	test_fd = open(argv[1], O_RDWR | O_TRUNC | O_DIRECT);
 	if (test_fd < 0)
 		err(errno, "%s: failed to open %s", __func__, argv[1]);
 
