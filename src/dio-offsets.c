@@ -40,8 +40,8 @@ static int test_fd;
 
 static void init_args(char **argv)
 {
-        test_fd = open(argv[1], O_RDWR | O_CREAT | O_TRUNC | O_DIRECT);
-        if (test_fd < 0)
+	test_fd = open(argv[1], O_RDWR | O_CREAT | O_TRUNC | O_DIRECT);
+	if (test_fd < 0)
 		err(errno, "%s: failed to open %s", __func__, argv[1]);
 
 	max_segments = strtoul(argv[2], NULL, 0);
@@ -102,12 +102,12 @@ static void init_buffers()
 	if (dev_bytes < buf_size)
 		buf_size = dev_bytes;
 
-        ret = posix_memalign((void **)&in_buf, pagesize, buf_size);
-        if (ret)
+	ret = posix_memalign((void **)&in_buf, pagesize, buf_size);
+	if (ret)
 		err(EINVAL, "%s: failed to allocate in-buf", __func__);
 
-        ret = posix_memalign((void **)&out_buf, pagesize, buf_size);
-        if (ret)
+	ret = posix_memalign((void **)&out_buf, pagesize, buf_size);
+	if (ret)
 		err(EINVAL, "%s: failed to allocate out-buf", __func__);
 
 	fd = open("/dev/urandom", O_RDONLY);
@@ -192,8 +192,8 @@ static void test_page_aligned_vectors()
 		iov[i].iov_len = logical_block_size * 2;
 	}
 
-        ret = pwritev(test_fd, iov, vecs, 0);
-        if (ret < 0)
+	ret = pwritev(test_fd, iov, vecs, 0);
+	if (ret < 0)
 		err(errno, "%s: failed to write buf", __func__);
 
 	for (i = 0; i < vecs; i++) {
@@ -202,8 +202,8 @@ static void test_page_aligned_vectors()
 		iov[i].iov_len = logical_block_size * 2;
 	}
 
-        ret = preadv(test_fd, iov, vecs, 0);
-        if (ret < 0)
+	ret = preadv(test_fd, iov, vecs, 0);
+	if (ret < 0)
 		err(errno, "%s: failed to read buf", __func__);
 
 	for (i = 0; i < vecs; i++) {
@@ -232,8 +232,8 @@ static void test_dma_aligned_vectors()
 		iov[i].iov_len = logical_block_size * 2;
 	}
 
-        ret = pwritev(test_fd, iov, vecs, 0);
-        if (ret < 0)
+	ret = pwritev(test_fd, iov, vecs, 0);
+	if (ret < 0)
 		err(errno, "%s: failed to write buf", __func__);
 
 	for (i = 0; i < vecs; i++) {
@@ -242,8 +242,8 @@ static void test_dma_aligned_vectors()
 		iov[i].iov_len = logical_block_size * 2;
 	}
 
-        ret = preadv(test_fd, iov, vecs, 0);
-        if (ret < 0)
+	ret = preadv(test_fd, iov, vecs, 0);
+	if (ret < 0)
 		err(errno, "%s: failed to read buf", __func__);
 
 	for (i = 0; i < vecs; i++) {
@@ -291,8 +291,8 @@ static void test_unaligned_page_vectors()
 	iov[i].iov_base = out_buf + offset;
 	iov[i].iov_len = logical_block_size * mult - iov[0].iov_len;
 
-        ret = pwritev(test_fd, iov, vecs, 0);
-        if (ret < 0) {
+	ret = pwritev(test_fd, iov, vecs, 0);
+	if (ret < 0) {
 		if (should_fail)
 			return;
 		err(errno, "%s: failed to write buf", __func__);
@@ -316,8 +316,8 @@ static void test_unaligned_page_vectors()
 	iov[i].iov_base = in_buf + offset;
 	iov[i].iov_len = logical_block_size * mult - iov[0].iov_len;
 
-        ret = preadv(test_fd, iov, vecs, 0);
-        if (ret < 0)
+	ret = preadv(test_fd, iov, vecs, 0);
+	if (ret < 0)
 		err(errno, "%s: failed to read buf", __func__);
 
 	i = 0;
@@ -355,8 +355,8 @@ static void test_unaligned_vectors()
 		iov[i].iov_len = logical_block_size / 2;
 	}
 
-        ret = pwritev(test_fd, iov, vecs, 0);
-        if (ret < 0)
+	ret = pwritev(test_fd, iov, vecs, 0);
+	if (ret < 0)
 		return;
 
 	for (i = 0; i < vecs; i++) {
@@ -365,8 +365,8 @@ static void test_unaligned_vectors()
 		iov[i].iov_len = logical_block_size / 2;
 	}
 
-        ret = preadv(test_fd, iov, vecs, 0);
-        if (ret < 0)
+	ret = preadv(test_fd, iov, vecs, 0);
+	if (ret < 0)
 		err(errno, "%s: failed to read buf", __func__);
 
 	for (i = 0; i < vecs; i++) {
@@ -396,8 +396,8 @@ static void test_invalid_starting_addr()
 		iov[i].iov_len = logical_block_size;
 	}
 
-        ret = pwritev(test_fd, iov, vecs, 0);
-        if (ret < 0)
+	ret = pwritev(test_fd, iov, vecs, 0);
+	if (ret < 0)
 		return;
 
 	err(ENOTSUP, "%s: write buf unexpectedly succeeded with NULL address ret:%d",
@@ -432,8 +432,8 @@ static void test_invalid_middle_addr()
 		iov[i].iov_len = logical_block_size;
 	}
 
-        ret = pwritev(test_fd, iov, vecs, 0);
-        if (ret < 0)
+	ret = pwritev(test_fd, iov, vecs, 0);
+	if (ret < 0)
 		return;
 
 	err(ENOTSUP, "%s: write buf unexpectedly succeeded with NULL address ret:%d",
@@ -502,8 +502,8 @@ static void test_invalid_dma_vector_alignment()
 	iov[4].iov_base = out_buf + max_bytes * 8;
 	iov[4].iov_len = max_bytes;
 
-        ret = pwritev(test_fd, iov, vecs, 0);
-        if (ret < 0) {
+	ret = pwritev(test_fd, iov, vecs, 0);
+	if (ret < 0) {
 		if (should_fail)
 			return;
 		err(errno, "%s: failed to write buf", __func__);
@@ -527,8 +527,8 @@ static void test_invalid_dma_vector_alignment()
 	iov[4].iov_base = in_buf + max_bytes * 8;
 	iov[4].iov_len = max_bytes;
 
-        ret = preadv(test_fd, iov, vecs, 0);
-        if (ret < 0)
+	ret = preadv(test_fd, iov, vecs, 0);
+	if (ret < 0)
 		err(errno, "%s: failed to read buf", __func__);
 
 	compare(out_buf, in_buf, max_bytes);
@@ -564,8 +564,8 @@ static void test_max_vector_limits()
 		iov[i].iov_len = iov_size;
 	}
 
-        ret = pwritev(test_fd, iov, vecs, 0);
-        if (ret < 0) {
+	ret = pwritev(test_fd, iov, vecs, 0);
+	if (ret < 0) {
 		if (should_fail)
 			return;
 		err(errno, "%s: failed to write buf", __func__);
@@ -581,8 +581,8 @@ static void test_max_vector_limits()
 		iov[i].iov_len = iov_size;
 	}
 
-        ret = preadv(test_fd, iov, vecs, 0);
-        if (ret < 0)
+	ret = preadv(test_fd, iov, vecs, 0);
+	if (ret < 0)
 		err(errno, "%s: failed to read buf", __func__);
 
 	for (i = 0; i < vecs; i++) {
@@ -618,8 +618,8 @@ static void test_invalid_dma_vector_alignment_large()
 	iov[i].iov_base = out_buf + max_bytes * 8;
 	iov[i].iov_len = logical_block_size;
 
-        ret = pwritev(test_fd, iov, vecs, 0);
-        if (ret < 0)
+	ret = pwritev(test_fd, iov, vecs, 0);
+	if (ret < 0)
 		return;
 
 	err(ENOTSUP, "%s: write buf unexpectedly succeeded with NULL address ret:%d",
@@ -652,8 +652,8 @@ static void test_invalid_dma_vector_length()
 	iov[3].iov_base = out_buf + max_bytes * 12;
 	iov[3].iov_len = max_bytes - max_bytes / 2;
 
-        ret = pwritev(test_fd, iov, vecs, 0);
-        if (ret < 0) {
+	ret = pwritev(test_fd, iov, vecs, 0);
+	if (ret < 0) {
 		if (should_fail)
 			return;
 		err(errno, "%s: failed to write buf", __func__);
@@ -675,8 +675,8 @@ static void test_invalid_dma_vector_length()
 	iov[3].iov_base = in_buf + max_bytes * 12;
 	iov[3].iov_len = max_bytes - max_bytes / 2;
 
-        ret = pwritev(test_fd, iov, vecs, 0);
-        if (ret < 0)
+	ret = pwritev(test_fd, iov, vecs, 0);
+	if (ret < 0)
 		err(errno, "%s: failed to read buf", __func__);
 
 	compare(out_buf, in_buf, iov[0].iov_len);
@@ -705,8 +705,8 @@ static void run_tests()
 /* ./$prog-name file */
 int main(int argc, char **argv)
 {
-        if (argc < 2)
-                errx(EINVAL, "expect argments: file");
+	if (argc < 2)
+		errx(EINVAL, "expect argments: file");
 
 	init_args(argv);
 	init_buffers();
