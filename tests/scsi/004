@@ -39,9 +39,9 @@ test() {
 	# stop injection
 	echo 0 > /sys/bus/pseudo/drivers/scsi_debug/opts
 	# dd closing SCSI disk causes implicit TUR also being delayed once
-	while grep -q -F "in_use_bm BUSY:" "/proc/scsi/scsi_debug/${SCSI_DEBUG_HOSTS[0]}"; do
-		sleep 1
-	done
+	# Remove the SCSI host to ensure all the pending I/O has finished.
+	host_cnt=$(cat /sys/bus/pseudo/drivers/scsi_debug/add_host)
+	echo -"$host_cnt" > /sys/bus/pseudo/drivers/scsi_debug/add_host
 	echo 1 > /sys/bus/pseudo/drivers/scsi_debug/ndelay
 	_exit_scsi_debug
 
