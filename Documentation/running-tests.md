@@ -40,10 +40,15 @@ overwrite any data on these devices.
 TEST_DEVS=(/dev/nvme0n1 /dev/sdb)
 ```
 
-If `TEST_DEVS` is not defined or is empty, only tests which do not require a
-device will be run, which implments the test function 'test()'. If `TEST_DEVS`
-is defined as a normal variable instead of an array, it will be converted to an
-array by splitting on whitespace.
+If `TEST_DEVS` is defined as a normal variable instead of an array, it will be
+converted to an array by splitting on whitespace.
+
+If `TEST_DEVS` is undefined or empty, only tests which do not require a device
+will be run. These tests, implemented within the 'test()' function, often
+prepare test target devices in the function using testing drivers such as
+null_blk or scsi_debug. Running these test cases can alter the state of these
+devices. If you set up devices using these drivers, their state may be impacted
+by the blktests runs.
 
 Some test cases require multiple block devices for single test run. These test
 cases implement a special test function test_device_array(). TEST_CASE_DEV_ARRAY
