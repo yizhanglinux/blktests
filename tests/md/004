@@ -24,7 +24,7 @@ setup_test_device() {
 	local scsi_debug_params=(
 		num_tgts=1
 		add_host=2
-		per_host_store=true
+		per_host_store=1
 		"${@:2}"
 	)
 
