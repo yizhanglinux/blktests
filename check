@@ -183,6 +183,36 @@ _check_dmesg() {
 	fi
 }
 
+_setup_kmemleak() {
+	local f="/sys/kernel/debug/kmemleak"
+
+	if [[ ! -e $f || ! -r $f ]]; then
+		return 0
+	fi
+
+	echo clear > "$f"
+}
+
+_check_kmemleak() {
+	local kmemleak
+	local f="/sys/kernel/debug/kmemleak"
+
+	if [[ ! -e $f || ! -r $f ]]; then
+		return 0
+	fi
+
+	echo scan > "$f"
+	sleep 1
+	kmemleak=$(cat "$f")
+
+	if [[ -z $kmemleak ]]; then
+		return 0
+	fi
+
+	printf '%s\n' "$kmemleak" > "${seqres}.kmemleak"
+	return 1
+}
+
 _read_last_test_run() {
 	local seqres="${RESULTS_DIR}/${TEST_NAME}"
 
@@ -377,6 +407,8 @@ _call_test() {
 	if [[ -v SKIP_REASONS ]]; then
 		TEST_RUN["status"]="not run"
 	else
+		_setup_kmemleak
+
 		if [[ -w /dev/kmsg ]]; then
 			local dmesg_marker="run blktests $TEST_NAME at ${TEST_RUN["date"]}"
 			echo "$dmesg_marker" >> /dev/kmsg
@@ -414,6 +446,9 @@ _call_test() {
 		elif ! _check_dmesg "$dmesg_marker"; then
 			TEST_RUN["status"]=fail
 			TEST_RUN["reason"]=dmesg
+		elif ! _check_kmemleak; then
+			TEST_RUN["status"]=fail
+			TEST_RUN["reason"]=kmemleak
 		else
 			TEST_RUN["status"]=pass
 		fi
@@ -450,6 +485,18 @@ _call_test() {
 				}
 				print \"    \" \$0
 			}" "${seqres}.dmesg"
+			;;
+		kmemleak)
+			echo "    kmemleak detected:"
+			awk "
+			{
+				if (NR > 10) {
+					print \"    ...\"
+					print \"    (See '${seqres}.kmemleak' for the entire message)\"
+					exit
+				}
+				print \"    \" \$0
+			}" "${seqres}.kmemleak"
 			;;
 		esac
 		return 1
