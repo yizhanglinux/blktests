@@ -530,7 +530,10 @@ _patient_rmmod()
 		modprobe --remove --wait="${timeout_ms}" "$module"
 		mod_ret=$?
 		if [[ $mod_ret -ne 0 ]]; then
-			echo "kmod patient module removal for $module timed out waiting for refcnt to become 0 using timeout of $max_tries_max returned $mod_ret"
+			echo "kmod patient module removal for $module timed out waiting for refcnt to become 0 using timeout of $max_tries_max returned $mod_ret" >&2
+		elif ! _patient_rmmod_check_refcnt "$module_sys"; then
+			echo "modprobe with --wait option succeeded but still $module has references" >&2
+			mod_ret=1
 		fi
 		return $mod_ret
 	fi
@@ -544,7 +547,7 @@ _patient_rmmod()
 	done
 
 	if [[ $refcnt_is_zero -ne 1 ]]; then
-		echo "custom patient module removal for $module timed out waiting for refcnt to become 0 using timeout of $max_tries_max"
+		echo "custom patient module removal for $module timed out waiting for refcnt to become 0 using timeout of $max_tries_max" 2>&1
 		return 1
 	fi
 
@@ -575,7 +578,7 @@ _patient_rmmod()
 	done
 
 	if [[ $mod_ret -ne 0 ]]; then
-		echo "custom patient module removal for $module timed out trying to remove using timeout of $max_tries_max last try returned $mod_ret"
+		echo "custom patient module removal for $module timed out trying to remove using timeout of $max_tries_max last try returned $mod_ret" 2>&1
 	fi
 
 	return $mod_ret
