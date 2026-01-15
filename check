@@ -596,10 +596,13 @@ _unload_module() {
 }
 
 _unload_modules() {
-	local i
+	local i reason
 
 	for ((i=${#MODULES_TO_UNLOAD[@]}; i > 0; i--)); do
-		_unload_module "${MODULES_TO_UNLOAD[i-1]}" 10
+		if ! reason=$(_patient_rmmod "${MODULES_TO_UNLOAD[i-1]}" \
+					     2>&1); then
+			echo "${reason}" >&2
+		fi
 	done
 
 	unset MODULES_TO_UNLOAD
