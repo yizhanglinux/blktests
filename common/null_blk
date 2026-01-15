@@ -38,7 +38,8 @@ _init_null_blk() {
 	local args=("$@")
 	if (( RUN_FOR_ZONED )); then args+=("zoned=1"); fi
 
-	if ! modprobe -r null_blk || ! modprobe null_blk "${args[@]}" ; then
+	_patient_rmmod null_blk || return 1
+	if ! modprobe null_blk "${args[@]}"; then
 		SKIP_REASONS+=("requires modular null_blk")
 		return 1
 	fi
@@ -79,5 +80,5 @@ _configure_null_blk() {
 _exit_null_blk() {
 	_remove_null_blk_devices
 	udevadm settle
-	modprobe -r -q null_blk
+	_patient_rmmod null_blk
 }
