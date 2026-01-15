@@ -87,6 +87,23 @@ _require_test_dev_is_not_nvme_multipath() {
 	return 0
 }
 
+_nvme_dev_support_native_multipath() {
+	if [[ "$(readlink -f "$TEST_DEV_SYSFS/device")" =~ /nvme-subsystem/ ]]; then
+		return 0
+	fi
+	return 1
+}
+
+_nvme_get_pci_from_dev_sysfs() {
+	if _nvme_dev_support_native_multipath; then
+		readlink --canonicalize "$TEST_DEV_SYSFS"/multipath/nvme*c*n*/device | \
+			grep -Eo '[0-9a-f]{4,5}:[0-9a-f]{2}:[0-9a-f]{2}\.[0-9a-f]' | \
+			tail -1
+	else
+		_get_pci_dev_from_blkdev
+	fi
+}
+
 _require_test_dev_support_sed() {
 	if ! nvme sed discover "$TEST_DEV" &> /dev/null; then
 		SKIP_REASONS+=("$TEST_DEV doesn't support SED operations")
