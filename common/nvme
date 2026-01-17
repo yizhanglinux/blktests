@@ -1190,6 +1190,7 @@ _nvme_requires() {
 		_have_driver nvme-tcp
 		_have_driver nvmet-tcp
 		_have_configfs
+		def_adrfam="ipv4"
 		;;
 	rdma)
 		_have_driver nvme-rdma
@@ -1201,6 +1202,7 @@ _nvme_requires() {
 		else
 			_have_driver siw
 		fi
+		def_adrfam="ipv4"
 		;;
 	fc)
 		_have_driver nvme-fc
@@ -1217,7 +1219,8 @@ _nvme_requires() {
 			def_adrfam="ipv6"
 			;;
 		ipv4)
-			;; # was already set
+			def_adrfam="ipv4"
+			;;
 		fc)
 			def_adrfam="fc"
 			;;
