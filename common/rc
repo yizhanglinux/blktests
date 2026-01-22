@@ -326,11 +326,14 @@ _test_dev_is_rotational() {
 }
 
 _require_test_dev_sysfs() {
-	if [[ ! -e "${TEST_DEV_SYSFS}/$1" ]]; then
-		SKIP_REASONS+=("${TEST_DEV} does not have sysfs attribute $1")
-		return 1
-	fi
-	return 0
+	local attr ret=0
+	for attr in "$@"; do
+		if [[ ! -e "${TEST_DEV_SYSFS}/$attr" ]]; then
+			SKIP_REASONS+=("${TEST_DEV} does not have sysfs attribute $attr")
+			ret=1
+		fi
+	done
+	return $ret
 }
 
 _require_test_dev_is_rotational() {
