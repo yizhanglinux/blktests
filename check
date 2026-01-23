@@ -208,27 +208,33 @@ _check_kernel_option() {
 	return 1
 }
 
-_setup_kmemleak() {
-	local f="/sys/kernel/debug/kmemleak"
+declare KMEMLEAK=0
+declare KMEMLEAK_FILE=/sys/kernel/debug/kmemleak
 
-	if [[ ! -e $f || ! -r $f ]]; then
-		return 0
+if _check_kernel_option DEBUG_KMEMLEAK && [[ -e $KMEMLEAK_FILE && -r $KMEMLEAK_FILE ]]; then
+	if _check_kernel_option DEBUG_KMEMLEAK_DEFAULT_OFF; then
+		if grep --quiet kmemleak=on /proc/cmdline; then
+			KMEMLEAK=1
+		fi
+	else
+		KMEMLEAK=1
 	fi
+fi
 
-	echo clear > "$f"
+_setup_kmemleak() {
+	if ((KMEMLEAK)) ;then
+		echo clear > "$KMEMLEAK_FILE"
+	fi
 }
 
 _check_kmemleak() {
 	local kmemleak
-	local f="/sys/kernel/debug/kmemleak"
 
-	if [[ ! -e $f || ! -r $f ]]; then
-		return 0
-	fi
+	((KMEMLEAK)) || return 0
 
-	echo scan > "$f"
+	echo scan > "$KMEMLEAK_FILE"
 	sleep 1
-	kmemleak=$(cat "$f")
+	kmemleak=$(cat "$KMEMLEAK_FILE")
 
 	if [[ -z $kmemleak ]]; then
 		return 0
