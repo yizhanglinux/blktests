@@ -211,6 +211,10 @@ _check_kernel_option() {
 _setup_kmemleak() {
 	local f="/sys/kernel/debug/kmemleak"
 
+	if _check_kernel_option DEBUG_KMEMLEAK_DEFAULT_OFF && \
+			! grep --quiet kmemleak=on /proc/cmdline; then
+		return 0
+	fi
 	if [[ ! -e $f || ! -r $f ]]; then
 		return 0
 	fi
@@ -222,6 +226,10 @@ _check_kmemleak() {
 	local kmemleak
 	local f="/sys/kernel/debug/kmemleak"
 
+	if _check_kernel_option DEBUG_KMEMLEAK_DEFAULT_OFF && \
+			! grep --quiet kmemleak=on /proc/cmdline; then
+		return 0
+	fi
 	if [[ ! -e $f || ! -r $f ]]; then
 		return 0
 	fi
