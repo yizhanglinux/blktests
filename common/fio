@@ -229,7 +229,9 @@ _fio_perf_report() {
 			echo "_fio_perf: too many terse lines" >&2
 			return
 		fi
-	} <"$TMPDIR/fio_perf"
+		# Fio often spits out message about random generator switch from
+		# tausworthe to tausworthe64. Ignore the message.
+	} < <(grep --invert-match tausworthe "$TMPDIR/fio_perf")
 
 	for name in "${FIO_PERF_FIELDS[@]}"; do
 		field="${FIO_TERSE_FIELDS["$name"]}"
