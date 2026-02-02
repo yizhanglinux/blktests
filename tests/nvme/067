@@ -1,0 +1,36 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2026 Swarna Prabhu, Samsung Electronics
+# Test out admin commands through the io uring passthrough interfaces.
+
+. tests/nvme/rc
+
+requires() {
+	_nvme_requires
+	_have_kernel_option IO_URING
+}
+
+DESCRIPTION="exercise the nvme admin commands usage with io uring passthrough interfaces"
+QUICK=1
+
+test_device() {
+	echo "Running ${TEST_NAME}"
+
+	local devname ctrl_dev
+
+	# extract the ctrl dev from the test dev
+	devname=${TEST_DEV#/dev/}
+	ctrl_dev="/dev/${devname%n*}"
+
+	# enable io_uring when it is disabled
+	_io_uring_enable
+
+	if ! sudo src/nvme-passthru-admin-uring "${ctrl_dev}"; then
+		echo "src/nvme-passthru-admin-uring failed"
+	fi
+
+	# reset io_uring setting before test exits
+	_io_uring_restore
+
+	echo "Test Complete"
+}

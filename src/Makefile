@@ -23,7 +23,8 @@ C_TARGETS := \
 	zbdioctl
 
 C_URING_TARGETS := miniublk \
-		metadata
+		metadata \
+		nvme-passthru-admin-uring
 
 HAVE_LIBURING := $(call HAVE_C_MACRO,liburing.h,IORING_OP_URING_CMD)
 HAVE_UBLK_HEADER := $(call HAVE_C_HEADER,linux/ublk_cmd.h,1)
