@@ -141,16 +141,27 @@ _get_blkzone_report() {
 	fi
 
 	local _IFS=$IFS
-	local -i loop=0
+	local -i loop=0 cond type
 	IFS=$' ,:'
 	while read -r -a _tokens
 	do
 		ZONE_STARTS+=($((_tokens[1])))
 		ZONE_LENGTHS+=($((_tokens[3])))
 		ZONE_CAPS+=($((_tokens[cap_idx])))
-		ZONE_WPTRS+=($((_tokens[wptr_idx])))
-		ZONE_CONDS+=($((${_tokens[conds_idx]%\(*})))
-		ZONE_TYPES+=($((${_tokens[type_idx]%\(*})))
+		# The latest blkzone reports 'N/A' when write pointers are
+		# invalid. In that case, do not handle them as numeric.
+		cond=$((${_tokens[conds_idx]%\(*}))
+		type=$((${_tokens[type_idx]%\(*}))
+		if ((type == ZONE_TYPE_CONVENTIONAL ||
+			(cond == ZONE_COND_READ_ONLY ||
+			 cond == ZONE_COND_FULL ||
+			 cond == ZONE_COND_OFFLINE))); then
+			ZONE_WPTRS+=(-1)
+		else
+			ZONE_WPTRS+=($((_tokens[wptr_idx])))
+		fi
+		ZONE_CONDS+=("${cond}")
+		ZONE_TYPES+=("${type}")
 		if [[ ${ZONE_TYPES[-1]} -eq ${ZONE_TYPE_CONVENTIONAL} ]]; then
 			(( NR_CONV_ZONES++ ))
 		fi
