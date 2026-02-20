@@ -80,7 +80,8 @@ _check_blkzone_report() {
 		fi
 
 		# Check write pointer
-		if ((cond != ZONE_COND_READ_ONLY &&
+		if ((zone_type != ZONE_TYPE_CONVENTIONAL &&
+		     cond != ZONE_COND_READ_ONLY &&
 		     cond != ZONE_COND_FULL &&
 		     cond != ZONE_COND_OFFLINE &&
 		     (wptr < 0 || wptr > len) )); then
