@@ -13,3 +13,4 @@
 /miniublk
 /nvme-passthrough-meta
 /ioctl-lbmd-query
+/nvme-passthru-admin-uring
