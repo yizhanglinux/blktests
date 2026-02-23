@@ -1115,8 +1115,12 @@ _nvmet_target_cleanup() {
 	fi
 }
 
+_test_dev_is_nvme() {
+	readlink --canonicalize "$TEST_DEV_SYSFS/device" | grep --quiet nvme
+}
+
 _require_test_dev_is_nvme() {
-	if ! readlink -f "$TEST_DEV_SYSFS/device" | grep -q nvme; then
+	if ! _test_dev_is_nvme; then
 		SKIP_REASONS+=("$TEST_DEV is not a NVMe device")
 		return 1
 	fi
@@ -1144,8 +1148,8 @@ _test_dev_has_no_metadata() {
 _test_dev_disables_extended_lba() {
 	local flbas
 
-	if ! flbas=$(nvme id-ns "$TEST_DEV" | grep flbas | \
-			     sed --quiet 's/.*: \(.*\)/\1/p'); then
+	if ! _test_dev_is_nvme || ! flbas=$(nvme id-ns "$TEST_DEV" | \
+	   grep flbas | sed --quiet 's/.*: \(.*\)/\1/p'); then
 		SKIP_REASONS+=("$TEST_DEV does not have namespace flbas field")
 		return 1
 	fi
