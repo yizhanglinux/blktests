@@ -1083,11 +1083,11 @@ _check_dependencies() {
 	local -A required_commands_and_packages
 	local cmd
 
-	# Require bash version 4.2
+	# Require bash version 4.3
 	IFS='.' read -r v1 v2 v3 < <(bash --version | grep version | head -1 | \
 					   sed 's/.*version \([0-9.]\+\).*/\1/')
-	if ((v1 * 65536 + v2 * 256 + v3 < 4 * 65536 + 2 * 256)); then
-		_warning "bash version is older than 4.2"
+	if ((v1 * 65536 + v2 * 256 + v3 < 4 * 65536 + 3 * 256)); then
+		_warning "bash version is older than 4.3"
 	fi
 
 	# Check dependent commands to run blktests

@@ -12,7 +12,7 @@ filesystem testing framework. It was originally written by Omar Sandoval and
 
 The dependencies are minimal, but make sure you have them installed:
 
-- bash (>= 4.2)
+- bash (>= 4.3)
 - GNU coreutils
 - GNU awk
 - util-linux
