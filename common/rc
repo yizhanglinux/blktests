@@ -69,6 +69,18 @@ _have_driver()
 	return 0
 }
 
+# Load the specified module. Record the module to MODULES_TO_UNLOAD so that they
+# will be unloaded by _unload_modules() after each test case run.
+_load_module() {
+	local modname="${1/-/_}"
+
+	if ! modprobe --quiet --first-time "${modname}"; then
+		return 1
+	fi
+
+	MODULES_TO_UNLOAD+=("${modname}")
+}
+
 # Check that the specified crypto algorithm is present, regardless of whether
 # it's built-in or as module.
 _have_crypto_algorithm()
