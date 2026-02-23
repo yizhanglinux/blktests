@@ -213,13 +213,7 @@ _cleanup_nvmet() {
 
 	if [[ "${nvme_trtype}" == "fc" ]]; then
 		_nvme_fcloop_del_lport "${def_local_wwnn}" "${def_local_wwpn}"
-		_patient_rmmod nvme-fcloop
 	fi
-	_patient_rmmod nvme-"${nvme_trtype}"
-	if [[ "${nvme_trtype}" != "loop" ]]; then
-		_patient_rmmod nvmet-"${nvme_trtype}"
-	fi
-	_patient_rmmod nvmet
 	if [[ "${nvme_trtype}" == "rdma" ]]; then
 		stop_soft_rdma
 	fi
@@ -240,11 +234,11 @@ _setup_nvmet() {
 		return
 	fi
 
-	modprobe -q nvmet
+	_load_module nvmet
 	if [[ "${nvme_trtype}" != "loop" ]]; then
-		modprobe -q nvmet-"${nvme_trtype}"
+		_load_module nvmet-"${nvme_trtype}"
 	fi
-	modprobe -q nvme-"${nvme_trtype}"
+	_load_module nvme-"${nvme_trtype}"
 	if [[ "${nvme_trtype}" == "rdma" ]]; then
 		start_soft_rdma
 		for i in $(rdma_network_interfaces)
@@ -263,7 +257,7 @@ _setup_nvmet() {
 		done
 	fi
 	if [[ "${nvme_trtype}" = "fc" ]]; then
-		modprobe -q nvme-fcloop
+		_load_module nvme-fcloop
 		_nvme_fcloop_add_lport "${def_local_wwnn}" "${def_local_wwpn}"
 	fi
 }
