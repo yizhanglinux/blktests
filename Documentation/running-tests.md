@@ -189,6 +189,16 @@ To run with both null_blk and scsi_debug:
 THROTL_BLKDEV_TYPES="nullb sdebug" ./check throtl/
 ```
 
+### Bcache test configuration
+
+The bcache tests require multiple devices to run simultaneously. By default,
+blktests run each test case for each device in TEST_DEVS. This behavior
+prevents testing with multiple devices. The TEST_CASE_DEV_ARRAY resolves this by
+enabling multiple device configurations per test. Bcache tests need at
+least three devices, which can be specified in your configuration as follows:
+
+TEST_CASE_DEV_ARRAY[bcache/*]="/dev/nvme0n1 /dev/vdb /dev/vdc"
+
 ### Normal user
 
 To run test cases which require normal user privilege, prepare a user and
