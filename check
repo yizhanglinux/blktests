@@ -229,6 +229,7 @@ _setup_kmemleak() {
 
 _check_kmemleak() {
 	local kmemleak
+	local out=$1
 
 	((KMEMLEAK)) || return 0
 
@@ -240,7 +241,7 @@ _check_kmemleak() {
 		return 0
 	fi
 
-	printf '%s\n' "$kmemleak" > "${seqres}.kmemleak"
+	printf '%s\n' "$kmemleak" > "$out"
 	return 1
 }
 
@@ -477,7 +478,7 @@ __call_test() {
 		elif ! _check_dmesg "$dmesg_marker"; then
 			TEST_RUN["status"]=fail
 			TEST_RUN["reason"]=dmesg
-		elif ! _check_kmemleak; then
+		elif ! _check_kmemleak "${seqres}.kmemleak"; then
 			TEST_RUN["status"]=fail
 			TEST_RUN["reason"]=kmemleak
 		else
@@ -1022,6 +1023,7 @@ _check() {
 
 	local test_dev test_name
 	local -a all_test_devs_in_array
+	local km_log="${OUTPUT}/start.kmemleak"
 
 	for test_name in "${!TEST_CASE_DEV_ARRAY[@]}"; do
 		IFS=" " read -r -a all_test_devs_in_array <<< \
@@ -1049,6 +1051,14 @@ _check() {
 			fi
 		done
 	done
+
+	if ((KMEMLEAK)); then
+		# check if memory is already leaked before blktests run
+		_setup_kmemleak
+		if ! _check_kmemleak "$km_log"; then
+			echo "Memory leak detected before test run start. See '${km_log}'."
+		fi
+	fi
 
 	local test_name group prev_group
 	local tests=()
