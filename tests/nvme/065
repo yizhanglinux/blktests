@@ -11,13 +11,16 @@
 DESCRIPTION="test unmap write zeroes sysfs interface with nvmet devices"
 QUICK=1
 
-nvme_trtype=loop
 nvmet_blkdev_type="device"
 
 requires() {
 	_have_scsi_debug
 	_nvme_requires
-	_require_nvme_trtype_is_loop
+	_require_nvme_trtype_is_fabrics
+}
+
+set_conditions() {
+	_set_nvme_trtype "$@"
 }
 
 setup_test_device() {
