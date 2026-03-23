@@ -233,7 +233,7 @@ _check_kmemleak() {
 
 	((KMEMLEAK)) || return 0
 
-	echo scan > "$KMEMLEAK_FILE"
+	{ echo scan > "$KMEMLEAK_FILE"; } 2>/dev/null || return 0
 	sleep 1
 	kmemleak=$(cat "$KMEMLEAK_FILE")
 
