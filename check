@@ -708,6 +708,7 @@ _check_and_call_test_device() {
 	local unset_skip_reason
 	local ret=0
 	local fallback=0
+	local fb_dev_file
 
 	if declare -fF requires >/dev/null; then
 		requires
@@ -726,10 +727,14 @@ _check_and_call_test_device() {
 				return 0
 			fi
 
-			if ! TEST_DEV=$(fallback_device); then
+			# Use a tmp file to keep bash context in fallback_device
+			fb_dev_file="${OUTPUT}/${TEST_NAME/\//_}_fallback_dev"
+			if ! fallback_device > "$fb_dev_file"; then
 				_warning "$TEST_NAME: fallback_device call failure"
 				return 0
 			fi
+			TEST_DEV=$(<"$fb_dev_file")
+			rm -f "$fb_dev_file"
 
 			if ! _find_sysfs_dirs "$TEST_DEV"; then
 				_warning "$TEST_NAME: could not find sysfs directory for ${TEST_DEV}"
