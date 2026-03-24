@@ -716,14 +716,34 @@ _check_and_call_test() {
 _check_and_call_test_device() {
 	local postfix
 	local unset_skip_reason
-	local ret
+	local ret=0
+	local fallback=0
 
 	if declare -fF requires >/dev/null; then
 		requires
 	fi
 
+	if [[ ${#TEST_DEVS[@]} -eq 0 ]] && \
+		   declare -fF fallback_device >/dev/null; then
+		TEST_DEVS[0]=fallback
+	fi
+
 	[[ -n $COND_DESC ]] && postfix=_${COND_DESC//[ =]/_}
 	for TEST_DEV in "${TEST_DEVS[@]}"; do
+		if [[ $TEST_DEV == fallback ]]; then
+			if ! TEST_DEV=$(fallback_device); then
+				_warning "$TEST_NAME: fallback_device call failure"
+				return 0
+			fi
+
+			if ! _find_sysfs_dirs "$TEST_DEV"; then
+				_warning "$TEST_NAME: could not find sysfs directory for ${TEST_DEV}"
+				cleanup_fallback_device
+				return 0
+			fi
+			fallback=1
+		fi
+
 		TEST_DEV_SYSFS="${TEST_DEV_SYSFS_DIRS["$TEST_DEV"]}"
 		TEST_DEV_PART_SYSFS="${TEST_DEV_PART_SYSFS_DIRS["$TEST_DEV"]}"
 
@@ -743,6 +763,13 @@ _check_and_call_test_device() {
 		(($? != 0)) && ret=1
 		if (( unset_skip_reason )); then
 			unset SKIP_REASONS
+		fi
+
+		if (( fallback )); then
+			cleanup_fallback_device
+			unset "TEST_DEV_SYSFS_DIRS[${TEST_DEV}]]"
+			unset "TEST_DEV_PART_SYSFS_DIRS[${TEST_DEV}]"
+			TEST_DEVS=()
 		fi
 	done
 
@@ -825,7 +852,6 @@ _run_test() {
 	DMESG_FILTER="cat"
 	RUN_FOR_ZONED=0
 	COND_DESC=""
-	FALLBACK_DEVICE=0
 	MODULES_TO_UNLOAD=()
 
 	local nr_conds cond_i
@@ -855,26 +881,6 @@ _run_test() {
 			ret=$?
 		fi
 	elif declare -fF test_device >/dev/null; then
-		if [[ ${#TEST_DEVS[@]} -eq 0 ]] && \
-			declare -fF fallback_device >/dev/null; then
-			if ! test_dev=$(fallback_device); then
-				_warning "$TEST_NAME: fallback_device call failure"
-				return 0
-			fi
-
-			if ! _find_sysfs_dirs "$test_dev"; then
-				_warning "$TEST_NAME: could not find sysfs directory for ${test_dev}"
-				cleanup_fallback_device
-				return 0
-			fi
-			TEST_DEVS=( "${test_dev}" )
-			FALLBACK_DEVICE=1
-		fi
-
-		if [[ ${#TEST_DEVS[@]} -eq 0 ]]; then
-			return 0
-		fi
-
 		if declare -fF set_conditions >/dev/null; then
 			nr_conds=$(set_conditions)
 			for ((cond_i = 0; cond_i < nr_conds; cond_i++)); do
@@ -886,13 +892,6 @@ _run_test() {
 		else
 			_check_and_call_test_device
 			ret=$?
-		fi
-
-		if (( FALLBACK_DEVICE )); then
-			cleanup_fallback_device
-			unset "TEST_DEV_SYSFS_DIRS[${TEST_DEVS[0]}]"
-			unset "TEST_DEV_PART_SYSFS_DIRS[${TEST_DEVS[0]}]"
-			TEST_DEVS=()
 		fi
 	else
 		_check_and_call_test_device_array
