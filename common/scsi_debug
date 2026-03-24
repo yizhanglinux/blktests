@@ -49,6 +49,8 @@ _scsi_debug_key_path() {
 _have_scsi_debug_group_number_stats() {
 	local ret=0
 
+	_have_loadable_scsi_debug || return 1
+
 	modprobe -qr scsi_debug >&/dev/null
 	modprobe -q scsi_debug delay=0 >&/dev/null
 	if ! [[ -e ${SD_PSEUDO_PATH}/group_number_stats ]]; then
