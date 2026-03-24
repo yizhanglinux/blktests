@@ -721,6 +721,11 @@ _check_and_call_test_device() {
 	[[ -n $COND_DESC ]] && postfix=_${COND_DESC//[ =]/_}
 	for TEST_DEV in "${TEST_DEVS[@]}"; do
 		if [[ $TEST_DEV == fallback ]]; then
+			if [[ -v SKIP_REASONS ]]; then
+				_output_notrun "$TEST_NAME"
+				return 0
+			fi
+
 			if ! TEST_DEV=$(fallback_device); then
 				_warning "$TEST_NAME: fallback_device call failure"
 				return 0
