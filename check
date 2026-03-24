@@ -417,7 +417,7 @@ _cleanup() {
 	_exit_cgroup2
 }
 
-__call_test() {
+_call_test() {
 	local test_func="$1"
 	local seqres="${RESULTS_DIR}/${TEST_NAME}"
 	# shellcheck disable=SC2034
@@ -535,17 +535,6 @@ __call_test() {
 	else
 		return 0
 	fi
-}
-
-_call_test() {
-	local ret
-
-	__call_test "$@"
-	ret=$?
-
-	_unload_modules
-
-	return $ret
 }
 
 _test_dev_is_zoned() {
@@ -711,6 +700,7 @@ _check_and_call_test() {
 	[[ -n $COND_DESC ]] && postfix=_${COND_DESC//[ =]/_}
 	RESULTS_DIR="$OUTPUT/nodev${postfix}"
 	_call_test test
+	_unload_modules
 }
 
 _check_and_call_test_device() {
@@ -771,6 +761,8 @@ _check_and_call_test_device() {
 			unset "TEST_DEV_PART_SYSFS_DIRS[${TEST_DEV}]"
 			TEST_DEVS=()
 		fi
+
+		_unload_modules
 	done
 
 	return $ret
@@ -842,6 +834,7 @@ _check_and_call_test_device_array() {
 		unset "TEST_DEV_ARRAY_SYSFS_DIRS[${devs[i]}]"
 	done
 
+	_unload_modules
 	return $ret
 }
 
