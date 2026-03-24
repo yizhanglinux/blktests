@@ -13,6 +13,7 @@ TIMED=1
 
 requires() {
 	_have_fio_zbd_zonemode
+	_have_loadable_scsi_debug
 }
 
 toggle_iosched() {
