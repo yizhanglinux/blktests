@@ -26,6 +26,11 @@
 #include <sys/mount.h>
 
 #define power_of_2(x) ((x) && !((x) & ((x) - 1)))
+#define err_errno(exit_code, ...)		\
+	do {					\
+		errno = (exit_code);		\
+		err(EXIT_FAILURE, __VA_ARGS__); \
+	} while (0)
 
 static unsigned long logical_block_size;
 static unsigned long dma_alignment;
@@ -42,7 +47,7 @@ static void init_args(char **argv)
 {
 	test_fd = open(argv[1], O_RDWR | O_TRUNC | O_DIRECT);
 	if (test_fd < 0)
-		err(errno, "%s: failed to open %s", __func__, argv[1]);
+		err(EXIT_FAILURE, "%s: failed to open %s", __func__, argv[1]);
 
 	max_segments = strtoul(argv[2], NULL, 0);
 	max_bytes = strtoul(argv[3], NULL, 0) * 1024;
@@ -54,18 +59,18 @@ static void init_args(char **argv)
 	    !power_of_2(dma_alignment) ||
 	    !power_of_2(logical_block_size)) {
 		errno = EINVAL;
-		err(1, "%s: bad parameters", __func__);
+		err(EXIT_FAILURE, "%s: bad parameters", __func__);
 	}
 
 	if (virt_boundary > 1 && virt_boundary < logical_block_size) {
 		errno = EINVAL;
-		err(1, "%s: virt_boundary:%lu logical_block_size:%lu", __func__,
+		err(EXIT_FAILURE, "%s: virt_boundary:%lu logical_block_size:%lu", __func__,
 			virt_boundary, logical_block_size);
 	}
 
 	if (dma_alignment > logical_block_size) {
 		errno = EINVAL;
-		err(1, "%s: dma_alignment:%lu logical_block_size:%lu", __func__,
+		err(EXIT_FAILURE, "%s: dma_alignment:%lu logical_block_size:%lu", __func__,
 			dma_alignment, logical_block_size);
 	}
 
@@ -87,7 +92,7 @@ static void init_buffers()
 
 	buf_size = max_bytes * max_segments / 2;
 	if (buf_size < logical_block_size * max_segments)
-		err(EINVAL, "%s: logical block size is too big", __func__);
+		err_errno(EINVAL, "%s: logical block size is too big", __func__);
 
 	if (buf_size < logical_block_size * 1024 * 4)
 		buf_size = logical_block_size * 1024 * 4;
@@ -97,26 +102,27 @@ static void init_buffers()
 
 	ret = ioctl(test_fd, BLKGETSIZE64, &dev_bytes);
 	if (ret < 0)
-		err(ret, "%s: ioctl BLKGETSIZE64 failed", __func__);
+		err(EXIT_FAILURE, "%s: ioctl BLKGETSIZE64 failed", __func__);
 
 	if (dev_bytes < buf_size)
 		buf_size = dev_bytes;
 
 	ret = posix_memalign((void **)&in_buf, pagesize, buf_size);
 	if (ret)
-		err(EINVAL, "%s: failed to allocate in-buf", __func__);
+		err_errno(EINVAL, "%s: failed to allocate in-buf", __func__);
 
 	ret = posix_memalign((void **)&out_buf, pagesize, buf_size);
 	if (ret)
-		err(EINVAL, "%s: failed to allocate out-buf", __func__);
+		err_errno(EINVAL, "%s: failed to allocate out-buf", __func__);
 
 	fd = open("/dev/urandom", O_RDONLY);
 	if (fd < 0)
-		err(EINVAL, "%s: failed to open urandom", __func__);
+		err_errno(EINVAL, "%s: failed to open urandom", __func__);
 
 	ret = read(fd, out_buf, buf_size);
 	if (ret < 0)
-		err(EINVAL, "%s: failed to randomize output buffer", __func__);
+		err_errno(EINVAL, "%s: failed to randomize output buffer",
+			  __func__);
 
 	close(fd);
 }
@@ -125,7 +131,7 @@ static void __compare(void *a, void *b, size_t size, const char *test)
 {
 	if (!memcmp(a, b, size))
 		return;
-	err(EIO, "%s: data corruption", test);
+	err_errno(EIO, "%s: data corruption", test);
 }
 #define compare(a, b, size) __compare(a, b, size, __func__)
 
@@ -143,11 +149,11 @@ static void test_full_size_aligned()
 	memset(in_buf, 0, buf_size);
 	ret = pwrite(test_fd, out_buf, buf_size, 0);
 	if (ret < 0)
-		err(errno, "%s: failed to write buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to write buf", __func__);
 
 	ret = pread(test_fd, in_buf, buf_size, 0);
 	if (ret < 0)
-		err(errno, "%s: failed to read buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to read buf", __func__);
 
 	compare(out_buf, in_buf, buf_size);
 }
@@ -164,11 +170,11 @@ static void test_dma_aligned()
 	memset(in_buf, 0, buf_size);
 	ret = pwrite(test_fd, out_buf + dma_alignment, max_bytes, 0);
 	if (ret < 0)
-		err(errno, "%s: failed to write buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to write buf", __func__);
 
 	ret = pread(test_fd, in_buf + dma_alignment, max_bytes, 0);
 	if (ret < 0)
-		err(errno, "%s: failed to read buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to read buf", __func__);
 
 	compare(out_buf + dma_alignment, in_buf + dma_alignment, max_bytes);
 }
@@ -194,7 +200,7 @@ static void test_page_aligned_vectors()
 
 	ret = pwritev(test_fd, iov, vecs, 0);
 	if (ret < 0)
-		err(errno, "%s: failed to write buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to write buf", __func__);
 
 	for (i = 0; i < vecs; i++) {
 		offset = logical_block_size * i * 4;
@@ -204,7 +210,7 @@ static void test_page_aligned_vectors()
 
 	ret = preadv(test_fd, iov, vecs, 0);
 	if (ret < 0)
-		err(errno, "%s: failed to read buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to read buf", __func__);
 
 	for (i = 0; i < vecs; i++) {
 		offset = logical_block_size * i * 4;
@@ -234,7 +240,7 @@ static void test_dma_aligned_vectors()
 
 	ret = pwritev(test_fd, iov, vecs, 0);
 	if (ret < 0)
-		err(errno, "%s: failed to write buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to write buf", __func__);
 
 	for (i = 0; i < vecs; i++) {
 		offset = logical_block_size * i * 8 + dma_alignment * (i + 1);
@@ -244,7 +250,7 @@ static void test_dma_aligned_vectors()
 
 	ret = preadv(test_fd, iov, vecs, 0);
 	if (ret < 0)
-		err(errno, "%s: failed to read buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to read buf", __func__);
 
 	for (i = 0; i < vecs; i++) {
 		offset = logical_block_size * i * 8 + dma_alignment * (i + 1);
@@ -295,7 +301,7 @@ static void test_unaligned_page_vectors()
 	if (ret < 0) {
 		if (should_fail)
 			return;
-		err(errno, "%s: failed to write buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to write buf", __func__);
 	}
 
 	i = 0;
@@ -318,7 +324,7 @@ static void test_unaligned_page_vectors()
 
 	ret = preadv(test_fd, iov, vecs, 0);
 	if (ret < 0)
-		err(errno, "%s: failed to read buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to read buf", __func__);
 
 	i = 0;
 	offset = pagesize - (logical_block_size / 4);
@@ -367,7 +373,7 @@ static void test_unaligned_vectors()
 
 	ret = preadv(test_fd, iov, vecs, 0);
 	if (ret < 0)
-		err(errno, "%s: failed to read buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to read buf", __func__);
 
 	for (i = 0; i < vecs; i++) {
 		offset = logical_block_size * i * 8;
@@ -400,8 +406,9 @@ static void test_invalid_starting_addr()
 	if (ret < 0)
 		return;
 
-	err(ENOTSUP, "%s: write buf unexpectedly succeeded with NULL address ret:%d",
-		__func__, ret);
+	err_errno(ENOTSUP,
+		  "%s: write buf unexpectedly succeeded with NULL address ret:%d",
+		  __func__, ret);
 }
 
 /*
@@ -436,8 +443,9 @@ static void test_invalid_middle_addr()
 	if (ret < 0)
 		return;
 
-	err(ENOTSUP, "%s: write buf unexpectedly succeeded with NULL address ret:%d",
-		__func__, ret);
+	err_errno(ENOTSUP,
+		  "%s: write buf unexpectedly succeeded with NULL address ret:%d",
+		  __func__, ret);
 }
 
 /*
@@ -458,16 +466,17 @@ static void test_invalid_dma_alignment()
 	if (ret < 0) {
 		if (should_fail)
 			return;
-		err(errno, "%s: failed to write buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to write buf", __func__);
 	}
 
 	if (should_fail)
-		err(ENOTSUP, "%s: write buf unexpectedly succeeded with invalid DMA offset address, ret:%d",
-			__func__, ret);
+		err_errno(ENOTSUP,
+			  "%s: write buf unexpectedly succeeded with invalid DMA offset address, ret:%d",
+			  __func__, ret);
 
 	ret = pread(test_fd, in_buf + offset, size, 0);
 	if (ret < 0)
-		err(errno, "%s: failed to read buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to read buf", __func__);
 
 	compare(out_buf + offset, in_buf + offset, size);
 }
@@ -506,11 +515,12 @@ static void test_invalid_dma_vector_alignment()
 	if (ret < 0) {
 		if (should_fail)
 			return;
-		err(errno, "%s: failed to write buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to write buf", __func__);
 	}
 	if (should_fail)
-		err(ENOTSUP, "%s: write buf unexpectedly succeeded with invalid DMA offset address ret:%d",
-			__func__, ret);
+		err_errno(ENOTSUP,
+			  "%s: write buf unexpectedly succeeded with invalid DMA offset address ret:%d",
+			  __func__, ret);
 
 	iov[0].iov_base = in_buf;
 	iov[0].iov_len = max_bytes;
@@ -529,7 +539,7 @@ static void test_invalid_dma_vector_alignment()
 
 	ret = preadv(test_fd, iov, vecs, 0);
 	if (ret < 0)
-		err(errno, "%s: failed to read buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to read buf", __func__);
 
 	compare(out_buf, in_buf, max_bytes);
 	compare(out_buf + max_bytes * 2, in_buf + max_bytes * 2, max_bytes);
@@ -568,12 +578,13 @@ static void test_max_vector_limits()
 	if (ret < 0) {
 		if (should_fail)
 			return;
-		err(errno, "%s: failed to write buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to write buf", __func__);
 	}
 
 	if (should_fail)
-		err(ENOTSUP, "%s: write buf unexpectedly succeeded with excess vectors ret:%d",
-			__func__, ret);
+		err_errno(ENOTSUP,
+			  "%s: write buf unexpectedly succeeded with excess vectors ret:%d",
+			  __func__, ret);
 
 	for (i = 0; i < vecs; i++) {
 		offset = i * iov_size * 2;
@@ -583,7 +594,7 @@ static void test_max_vector_limits()
 
 	ret = preadv(test_fd, iov, vecs, 0);
 	if (ret < 0)
-		err(errno, "%s: failed to read buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to read buf", __func__);
 
 	for (i = 0; i < vecs; i++) {
 		offset = i * iov_size * 2;
@@ -622,8 +633,9 @@ static void test_invalid_dma_vector_alignment_large()
 	if (ret < 0)
 		return;
 
-	err(ENOTSUP, "%s: write buf unexpectedly succeeded with NULL address ret:%d",
-		__func__, ret);
+	err_errno(ENOTSUP,
+		  "%s: write buf unexpectedly succeeded with NULL address ret:%d",
+		  __func__, ret);
 }
 
 /*
@@ -656,12 +668,13 @@ static void test_invalid_dma_vector_length()
 	if (ret < 0) {
 		if (should_fail)
 			return;
-		err(errno, "%s: failed to write buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to write buf", __func__);
 	}
 
 	if (should_fail)
-		err(ENOTSUP, "%s: write buf unexpectedly succeeded with invalid DMA offset address ret:%d",
-			__func__, ret);
+		err_errno(ENOTSUP,
+			  "%s: write buf unexpectedly succeeded with invalid DMA offset address ret:%d",
+			  __func__, ret);
 
 	iov[0].iov_base = in_buf;
 	iov[0].iov_len = max_bytes * 2 - max_bytes / 2;
@@ -677,7 +690,7 @@ static void test_invalid_dma_vector_length()
 
 	ret = pwritev(test_fd, iov, vecs, 0);
 	if (ret < 0)
-		err(errno, "%s: failed to read buf", __func__);
+		err(EXIT_FAILURE, "%s: failed to read buf", __func__);
 
 	compare(out_buf, in_buf, iov[0].iov_len);
 	compare(out_buf + max_bytes * 4, in_buf + max_bytes * 4, iov[1].iov_len);
