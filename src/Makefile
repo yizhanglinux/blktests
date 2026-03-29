@@ -19,7 +19,6 @@ C_TARGETS := \
 	nbdsetsize \
 	openclose \
 	sg/dxfer-from-dev \
-	sg/syzkaller1 \
 	zbdioctl
 
 C_URING_TARGETS := miniublk \
@@ -32,11 +31,14 @@ HAVE_UBLK_HEADER := $(call HAVE_C_HEADER,linux/ublk_cmd.h,1)
 CXX_TARGETS := \
 	discontiguous-io
 
+SYZKALLER_TARGETS := \
+	sg/syzkaller1
+
 ifeq ($(HAVE_LIBURING)$(HAVE_UBLK_HEADER), 11)
-TARGETS := $(C_TARGETS) $(CXX_TARGETS) $(C_URING_TARGETS)
+TARGETS := $(C_TARGETS) $(CXX_TARGETS) $(SYZKALLER_TARGETS) $(C_URING_TARGETS)
 else
 $(info Skip $(C_URING_TARGETS) build due to missing kernel header(v6.0+) or liburing(2.2+))
-TARGETS := $(C_TARGETS) $(CXX_TARGETS)
+TARGETS := $(C_TARGETS) $(CXX_TARGETS) $(SYZKALLER_TARGETS)
 endif
 
 CONFIG_DEFS := $(call HAVE_C_HEADER,linux/blkzoned.h,-DHAVE_LINUX_BLKZONED_H)
@@ -56,6 +58,9 @@ clean:
 install: $(TARGETS)
 	install -m755 -d $(dest)
 	install $(TARGETS) $(dest)
+
+$(SYZKALLER_TARGETS): %: %.c
+	$(CC) $(CFLAGS) -Wno-unused-but-set-variable $(LDFLAGS) -o $@ $^
 
 $(C_TARGETS): %: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $^
