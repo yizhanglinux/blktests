@@ -246,7 +246,7 @@ static int check_metadata(void *p, int intervals, int ref)
 
 				if (v != ref) {
 					fprintf(stderr, "reftag interval:%d expected:%x got:%llx\n",
-						i, ref, v);
+						i, ref, (unsigned long long)v);
 					return -1;
 				}
 				remaining -= sizeof(*tuple);
