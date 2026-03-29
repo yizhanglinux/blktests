@@ -9,6 +9,7 @@
 #define _GNU_SOURCE
 #endif
 #include <stdio.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
@@ -245,7 +246,7 @@ static int check_metadata(void *p, int intervals, int ref)
 				__u64 v = get_unaligned_be48(tuple->ref_tag);
 
 				if (v != ref) {
-					fprintf(stderr, "reftag interval:%d expected:%x got:%llx\n",
+					fprintf(stderr, "reftag interval:%d expected:%x got:%" PRIx64 "\n",
 						i, ref, v);
 					return -1;
 				}
