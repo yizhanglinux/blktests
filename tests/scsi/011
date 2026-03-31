@@ -17,6 +17,7 @@ requires() {
 	_have_kver 6 10
 	_have_program mkfs.f2fs
 	_have_scsi_debug_group_number_stats
+	_page_size_equals 4096
 }
 
 run_test() {

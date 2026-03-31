@@ -552,6 +552,31 @@ _have_systemctl_unit() {
 	return 0
 }
 
+# Get system page size from kernel conguration
+_get_page_size() {
+	local page_shift
+
+	page_shift=$(_get_kernel_option PAGE_SHIFT)
+
+	echo $((1<< page_shift))
+}
+
+# Check if the system page size matches the required size (in bytes).
+# Example: _page_size_equals 4096
+_page_size_equals() {
+	local required_size="$1"
+	local current_size
+
+	current_size=$(_get_page_size)
+
+	if [ "$current_size" -ne "$required_size" ]; then
+		SKIP_REASONS+=("This test requires ${required_size} bytes page size, but system has ${current_size} bytes")
+		return 1
+	fi
+
+	return 0
+}
+
 _systemctl_start() {
 	local unit="$1"
 

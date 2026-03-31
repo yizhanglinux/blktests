@@ -16,6 +16,7 @@ requires() {
 	_have_module_param scsi_debug zone_cap_mb
 	_have_program mkfs.f2fs
 	_have_module scsi_debug
+	_page_size_equals 4096
 }
 
 test() {
