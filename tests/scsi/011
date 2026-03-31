@@ -12,6 +12,7 @@ QUICK=1
 requires() {
 	_have_fio
 	_have_driver f2fs
+	_page_size_equals 4096
 	# See also commit 7643f3fe2772 ("f2fs: assign the write hint per stream
 	# by default"; v6.10).
 	_have_kver 6 10
