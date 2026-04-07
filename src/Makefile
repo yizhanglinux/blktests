@@ -19,7 +19,6 @@ C_TARGETS := \
 	nbdsetsize \
 	openclose \
 	sg/dxfer-from-dev \
-	sg/syzkaller1 \
 	zbdioctl
 
 C_URING_TARGETS := metadata \
@@ -32,7 +31,10 @@ HAVE_UBLK_HEADER := $(call HAVE_C_HEADER,linux/ublk_cmd.h,1)
 CXX_TARGETS := \
 	discontiguous-io
 
-TARGETS := $(C_TARGETS) $(CXX_TARGETS)
+SYZKALLER_TARGETS := \
+	sg/syzkaller1
+
+TARGETS := $(C_TARGETS) $(CXX_TARGETS) $(SYZKALLER_TARGETS)
 
 ifeq ($(HAVE_UBLK_HEADER), 1)
 C_URING_TARGETS += $(C_UBLK_TARGETS)
@@ -69,6 +71,9 @@ $(C_TARGETS): %: %.c
 
 $(CXX_TARGETS): %: %.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
+
+$(SYZKALLER_TARGETS): %: %.c
+	$(CC) $(CFLAGS) -Wno-unused-but-set-variable $(LDFLAGS) -o $@ $^
 
 $(C_URING_TARGETS): %: %.c
 	$(CC) $(CFLAGS) $(LDFLAGS) $(URING_FLAGS) -o $@ $^ $(URING_LIBS)
