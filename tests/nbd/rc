@@ -72,7 +72,7 @@ allowlist=true
 [export]
 exportname=${TMPDIR}/export
 EOF
-	nbd-server -p "${TMPDIR}/nbd.pid" -C "${TMPDIR}/nbd.conf"
+	nbd-server -p "${TMPDIR}/nbd.pid" -C "${TMPDIR}/nbd.conf" 2> "$FULL"
 
 	# Wait for nbd-server start listening the port
 	for ((i = 0; i < 100; i++)); do
