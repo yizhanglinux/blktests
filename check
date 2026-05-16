@@ -458,7 +458,17 @@ _call_test() {
 
 		TIMEFORMAT="%Rs"
 		pushd . >/dev/null || return
+		if ((CMD_TRACE)); then
+			exec 8>"${seqres}.cmdtrace"
+			export BASH_XTRACEFD=8
+			set -x
+		fi
 		{ time "$test_func" >"${seqres}.out" 2>&1; } 2>"${seqres}.runtime"
+		if ((CMD_TRACE)); then
+			set +x
+			unset BASH_XTRACEFD
+			exec 8>&-
+		fi
 		TEST_RUN["exit_status"]=$?
 		popd >/dev/null || return
 		TEST_RUN["runtime"]="$(cat "${seqres}.runtime")"
@@ -1157,7 +1167,7 @@ Miscellaneous:
 
 _check_dependencies
 
-if ! TEMP=$(getopt -o 'do:q::x:c:h' --long 'device-only,quick::,exclude:,output:,config:,help' -n "$0" -- "$@"); then
+if ! TEMP=$(getopt -o 'do:q::x:c:th' --long 'device-only,quick::,exclude:,output:,config:,cmd-trace,help' -n "$0" -- "$@"); then
 	exit 1
 fi
 
@@ -1165,6 +1175,7 @@ eval set -- "$TEMP"
 unset TEMP
 
 LOADED_CONFIG=0
+CMD_TRACE=0
 OPTION_EXCLUDE=()
 while true; do
 	case "$1" in
@@ -1191,6 +1202,10 @@ while true; do
 			. "$2"
 			LOADED_CONFIG=1
 			shift 2
+			;;
+		'-t'|'--cmd-trace')
+			CMD_TRACE=1
+			shift
 			;;
 		'-h'|'--help')
 			usage out
