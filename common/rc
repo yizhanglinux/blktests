@@ -790,3 +790,10 @@ _min() {
 	done
 	echo "$ret"
 }
+
+# Write a value to a sysfs/debugfs/configfs attribute. This wrapper is used to
+# trace sysfs/debugfs/configfs attribute writes when the --cmd-trace option is
+# enabled.
+_set_attr() {
+	echo -n "$1" > "$2"
+}
