@@ -602,18 +602,18 @@ _create_nvmet_port() {
 		traddr=$(_fc_traddr $port)
 		adrfam="fc"
 	fi
-	echo "${trtype}" > "${portcfs}/addr_trtype"
-	echo "${traddr}" > "${portcfs}/addr_traddr"
-	echo "${adrfam}" > "${portcfs}/addr_adrfam"
+	_set_attr "${trtype}" "${portcfs}/addr_trtype"
+	_set_attr "${traddr}" "${portcfs}/addr_traddr"
+	_set_attr "${adrfam}" "${portcfs}/addr_adrfam"
 	if [[ "${adrfam}" != "fc" ]] && \
 	   [[ "${adrfam}" != "loop" ]] ; then
-		echo "${trsvcid}" > "${portcfs}/addr_trsvcid"
+		_set_attr "${trsvcid}" "${portcfs}/addr_trsvcid"
 	fi
 	if [[ "${trtype}" == "tcp" ]] && \
 		   [[ "${tls}" != "none" ]]; then
-		echo "tls1.3" > "${portcfs}/addr_tsas"
+		_set_attr "tls1.3" "${portcfs}/addr_tsas"
 		if [[ "${tls}" != "required" ]]; then
-			echo "not required" > "${portcfs}/addr_treq"
+			_set_attr "not required" "${portcfs}/addr_treq"
 		fi
 	fi
 	echo "${port}"
@@ -633,7 +633,7 @@ _setup_nvmet_port_ana() {
 		fi
 		mkdir "${anaport}"
 	fi
-	echo "${anastate}" > "${anaport}/ana_state"
+	_set_attr "${anastate}" "${anaport}/ana_state"
 }
 
 _remove_nvmet_port() {
@@ -754,19 +754,19 @@ _create_nvmet_ns() {
 	subsys_path="${NVMET_CFS}/subsystems/${subsysnqn}"
 	ns_path="${subsys_path}/namespaces/${nsid}"
 	mkdir "${ns_path}"
-	printf "%s" "${blkdev}" > "${ns_path}/device_path"
+	_set_attr "$(printf "%s" "${blkdev}")" "${ns_path}/device_path"
 	if [[ -f "${ns_path}/resv_enable" && "${resv_enable}" = true ]] ; then
-		printf 1 > "${ns_path}/resv_enable"
+		_set_attr 1 "${ns_path}/resv_enable"
 	fi
 	if [[ -n "${uuid}" ]]; then
-		printf "%s" "${uuid}" > "${ns_path}/device_uuid"
+		_set_attr "$(printf "%s" "${uuid}")" "${ns_path}/device_uuid"
 	else
 		uuid=$(cat "${ns_path}/device_uuid")
 	fi
 	if (( grpid != 1 )); then
-		printf "%d" "${grpid}" > "${ns_path}/ana_grpid"
+		_set_attr "$(printf "%d" "${grpid}")" "${ns_path}/ana_grpid"
 	fi
-	printf 1 > "${ns_path}/enable"
+	_set_attr 1 "${ns_path}/enable"
 	echo "${uuid}"
 }
 
@@ -780,7 +780,7 @@ _setup_nvmet_ns_ana() {
 	if [[ ! -d "${ns_path}" ]]; then
 		return
 	fi
-	echo "${anagrpid}" > "${ns_path}/anagrpid"
+	_set_attr "${anagrpid}" "${ns_path}/anagrpid"
 }
 
 _create_nvmet_subsystem() {
@@ -818,7 +818,7 @@ _create_nvmet_subsystem() {
 
 	cfs_path="${NVMET_CFS}/subsystems/${subsystem}"
 	mkdir -p "${cfs_path}"
-	echo 0 > "${cfs_path}/attr_allow_any_host"
+	_set_attr 0 "${cfs_path}/attr_allow_any_host"
 	if [[ -z "${blkdev}" ]]; then
 		return 0
 	fi
@@ -857,10 +857,10 @@ _create_nvmet_host() {
 	mkdir "${host_path}"
 	_add_nvmet_allow_hosts "${nvmet_subsystem}" "${nvmet_hostnqn}"
 	if [[ "${nvmet_hostkey}" ]] ; then
-		echo "${nvmet_hostkey}" > "${host_path}/dhchap_key"
+		_set_attr "${nvmet_hostkey}" "${host_path}/dhchap_key"
 	fi
 	if [[ "${nvmet_ctrlkey}" ]] ; then
-		echo "${nvmet_ctrlkey}" > "${host_path}/dhchap_ctrl_key"
+		_set_attr "${nvmet_ctrlkey}" "${host_path}/dhchap_ctrl_key"
 	fi
 }
 
@@ -870,7 +870,7 @@ _remove_nvmet_ns() {
 	local subsys_path="${NVMET_CFS}/subsystems/${nvmet_subsystem}"
 	local nvmet_ns_path="${subsys_path}/namespaces/${nsid}"
 
-	echo 0 > "${nvmet_ns_path}/enable"
+	_set_attr 0 "${nvmet_ns_path}/enable"
 	rmdir "${nvmet_ns_path}"
 }
 

@@ -223,12 +223,12 @@ _create_nvmet_passthru() {
 	local passthru_path="${subsys_path}/passthru"
 
 	mkdir -p "${subsys_path}"
-	echo 0 > "${subsys_path}/attr_allow_any_host"
+	_set_attr 0 "${subsys_path}/attr_allow_any_host"
 
 	_test_dev_nvme_ctrl > "${passthru_path}/device_path"
-	echo 1 > "${passthru_path}/enable"
+	_set_attr 1 "${passthru_path}/enable"
 	if [[ -f "${passthru_path}/clear_ids" ]]; then
-		echo 1 > "${passthru_path}/clear_ids"
+		_set_attr 1 "${passthru_path}/clear_ids"
 	fi
 }
 
@@ -237,7 +237,7 @@ _remove_nvmet_passhtru() {
 	local subsys_path="${NVMET_CFS}/subsystems/${nvmet_subsystem}"
 	local passthru_path="${subsys_path}/passthru"
 
-	echo 0 > "${passthru_path}/enable"
+	_set_attr 0 "${passthru_path}/enable"
 	rm -f "${subsys_path}"/allowed_hosts/*
 	rmdir "${subsys_path}"
 }
@@ -247,8 +247,7 @@ _set_nvmet_hostkey() {
 	local nvmet_hostkey="$2"
 	local cfs_path="${NVMET_CFS}/hosts/${nvmet_hostnqn}"
 
-	echo "${nvmet_hostkey}" > \
-	     "${cfs_path}/dhchap_key"
+	_set_attr "${nvmet_hostkey}" "${cfs_path}/dhchap_key"
 }
 
 _set_nvmet_ctrlkey() {
@@ -256,8 +255,7 @@ _set_nvmet_ctrlkey() {
 	local nvmet_ctrlkey="$2"
 	local cfs_path="${NVMET_CFS}/hosts/${nvmet_hostnqn}"
 
-	echo "${nvmet_ctrlkey}" > \
-	     "${cfs_path}/dhchap_ctrl_key"
+	_set_attr "${nvmet_ctrlkey}" "${cfs_path}/dhchap_ctrl_key"
 }
 
 _set_nvmet_hash() {
@@ -265,8 +263,7 @@ _set_nvmet_hash() {
 	local nvmet_hash="$2"
 	local cfs_path="${NVMET_CFS}/hosts/${nvmet_hostnqn}"
 
-	echo "${nvmet_hash}" > \
-	     "${cfs_path}/dhchap_hash"
+	_set_attr "${nvmet_hash}" "${cfs_path}/dhchap_hash"
 }
 
 _set_nvmet_dhgroup() {
@@ -274,8 +271,7 @@ _set_nvmet_dhgroup() {
 	local nvmet_dhgroup="$2"
 	local cfs_path="${NVMET_CFS}/hosts/${nvmet_hostnqn}"
 
-	echo "${nvmet_dhgroup}" > \
-	     "${cfs_path}/dhchap_dhgroup"
+	_set_attr "${nvmet_dhgroup}" "${cfs_path}/dhchap_dhgroup"
 }
 
 _enable_nvmet_ns() {
@@ -285,7 +281,7 @@ _enable_nvmet_ns() {
 	cfs_path="${NVMET_CFS}/subsystems/${subsysnqn}"
 	ns_path="${cfs_path}/namespaces/${nsid}"
 
-	echo 1 > "${ns_path}/enable"
+	_set_attr 1 "${ns_path}/enable"
 }
 
 _disable_nvmet_ns() {
@@ -295,7 +291,7 @@ _disable_nvmet_ns() {
 	cfs_path="${NVMET_CFS}/subsystems/${subsysnqn}"
 	ns_path="${cfs_path}/namespaces/${nsid}"
 
-	echo 0 > "${ns_path}/enable"
+	_set_attr 0 "${ns_path}/enable"
 }
 
 _set_nvmet_ns_uuid() {
@@ -473,8 +469,10 @@ _nvme_passthru_logging_setup()
 
 _nvme_passthru_logging_cleanup()
 {
-	echo "$ctrl_dev_passthru_logging" > /sys/class/nvme/"$2"/passthru_err_log_enabled
-	echo "$ns_dev_passthru_logging" > /sys/class/nvme/"$2"/"$1"/passthru_err_log_enabled
+	_set_attr "$ctrl_dev_passthru_logging" \
+	      /sys/class/nvme/"$2"/passthru_err_log_enabled
+	_set_attr "$ns_dev_passthru_logging" \
+	      /sys/class/nvme/"$2"/"$1"/passthru_err_log_enabled
 }
 
 _nvme_err_inject_setup()
@@ -495,55 +493,55 @@ _nvme_err_inject_cleanup()
         local a
 
         for a in /sys/kernel/debug/"$1"/fault_inject/*; do
-                echo "${NS_DEV_FAULT_INJECT_SAVE[${a}]}" > "${a}"
+                _set_attr "${NS_DEV_FAULT_INJECT_SAVE[${a}]}" "${a}"
         done
 
         for a in /sys/kernel/debug/"$2"/fault_inject/*; do
-                echo "${CTRL_DEV_FAULT_INJECT_SAVE[${a}]}" > "${a}"
+                _set_attr "${CTRL_DEV_FAULT_INJECT_SAVE[${a}]}" "${a}"
         done
 }
 
 _nvme_enable_err_inject()
 {
-        echo "$2" > /sys/kernel/debug/"$1"/fault_inject/verbose
-        echo "$3" > /sys/kernel/debug/"$1"/fault_inject/probability
-        echo "$4" > /sys/kernel/debug/"$1"/fault_inject/dont_retry
-        echo "$5" > /sys/kernel/debug/"$1"/fault_inject/status
-        echo "$6" > /sys/kernel/debug/"$1"/fault_inject/times
+        _set_attr "$2" /sys/kernel/debug/"$1"/fault_inject/verbose
+        _set_attr "$3" /sys/kernel/debug/"$1"/fault_inject/probability
+        _set_attr "$4" /sys/kernel/debug/"$1"/fault_inject/dont_retry
+        _set_attr "$5" /sys/kernel/debug/"$1"/fault_inject/status
+        _set_attr "$6" /sys/kernel/debug/"$1"/fault_inject/times
 }
 
 _nvme_disable_err_inject()
 {
-        echo 0 > /sys/kernel/debug/"$1"/fault_inject/probability
-        echo 0 > /sys/kernel/debug/"$1"/fault_inject/times
+        _set_attr 0 /sys/kernel/debug/"$1"/fault_inject/probability
+        _set_attr 0 /sys/kernel/debug/"$1"/fault_inject/times
 }
 
 _nvme_enable_passthru_admin_error_logging()
 {
-	echo on > /sys/class/nvme/"$1"/passthru_err_log_enabled
+	_set_attr on /sys/class/nvme/"$1"/passthru_err_log_enabled
 }
 
 _nvme_enable_passthru_io_error_logging()
 {
-	echo on > /sys/class/nvme/"$2"/"$1"/passthru_err_log_enabled
+	_set_attr on /sys/class/nvme/"$2"/"$1"/passthru_err_log_enabled
 }
 
 _nvme_disable_passthru_admin_error_logging()
 {
-	echo off > /sys/class/nvme/"$1"/passthru_err_log_enabled
+	_set_attr off /sys/class/nvme/"$1"/passthru_err_log_enabled
 }
 
 _nvme_disable_passthru_io_error_logging()
 {
-	echo off > /sys/class/nvme/"$2"/"$1"/passthru_err_log_enabled
+	_set_attr off /sys/class/nvme/"$2"/"$1"/passthru_err_log_enabled
 }
 
 _nvme_reset_ctrl() {
-	echo 1 > /sys/class/nvme/"$1"/reset_controller
+	_set_attr 1 /sys/class/nvme/"$1"/reset_controller
 }
 
 _nvme_delete_ctrl() {
-	echo 1 > /sys/class/nvme/"$1"/delete_controller
+	_set_attr 1 /sys/class/nvme/"$1"/delete_controller
 }
 
 # Check whether the version of the fio is greater than or equal to $1.$2.$3
