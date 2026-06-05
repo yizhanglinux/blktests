@@ -1,0 +1,49 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2026 Western Digital Corporation or its affiliates.
+#
+# Switch IO schedulers concurrently to exercise the scheduler change path under
+# contention. This is the regression test for the kernel fix commit 4ff58d6bc9dd
+# ("block: serialize elevator changes for the same queue using a writer lock").
+
+. tests/block/rc
+. common/null_blk
+
+DESCRIPTION="switch schedulers concurrently"
+TIMED=1
+
+switch_schedulers() {
+	local start_time idx
+
+	start_time=$(date +%s)
+	while (( $(date +%s) - start_time <= timeout )); do
+		idx=$((RANDOM % ${#scheds[@]}))
+		{ echo "${scheds[$idx]}" > \
+                       /sys/block/nullb1/queue/scheduler ;} 2> /dev/null
+	done
+}
+
+test() {
+	echo "Running ${TEST_NAME}"
+
+	local timeout pid1 pid2
+	local -a scheds
+
+	if ! _configure_null_blk nullb1 power=1; then
+		return 1
+	fi
+
+	timeout=${TIMEOUT:=30}
+	read -r -a scheds < <(_io_schedulers nullb1)
+
+	switch_schedulers &
+	pid1=$!
+	switch_schedulers &
+	pid2=$!
+
+	wait $pid1 $pid2
+
+	_exit_null_blk
+
+	echo "Test complete"
+}
