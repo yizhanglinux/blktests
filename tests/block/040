@@ -27,8 +27,7 @@ modify_io_sched() {
 	deadline=$(($(_uptime_s) + TIMEOUT))
 	while [ "$(_uptime_s)" -lt "$deadline" ]; do
 		for sched in $(_io_schedulers "$dev"); do
-			{ echo "$sched" > /sys/block/"$dev"/queue/scheduler ;} \
-				&> /dev/null
+			_write_queue_sched "$sched" /sys/block/"$dev"/queue/scheduler
 			sleep .5
 		done
 	done

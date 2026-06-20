@@ -302,7 +302,7 @@ set_scheduler() {
 			bfq-mq)      s=bfq;;
 		esac
 	fi
-	if ! echo "$s" > "$p"; then
+	if ! _write_queue_sched "$s" "$p"; then
 		echo "Changing scheduler of $b from $(<"$p") into $s failed"
 		return 1
 	fi

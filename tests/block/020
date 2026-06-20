@@ -33,7 +33,7 @@ test() {
 	fi
 	for sched in $(_io_schedulers nullb1); do
 		echo "Testing $sched" >> "$FULL"
-		echo "$sched" > /sys/block/nullb1/queue/scheduler
+		_write_queue_sched "$sched" /sys/block/nullb1/queue/scheduler
 		_fio_perf --bs=4k --ioengine=libaio --iodepth=$iodepth \
 			--numjobs="$(nproc)" --rw=randread --name=async \
 			--filename=/dev/nullb1 --size=1g --direct=1 \

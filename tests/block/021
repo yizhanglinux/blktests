@@ -29,7 +29,7 @@ test() {
 
 	for sched in $(_io_schedulers nullb1); do
 		echo "Testing $sched" >> "$FULL"
-		echo "$sched" > /sys/block/nullb1/queue/scheduler
+		_write_queue_sched "$sched" /sys/block/nullb1/queue/scheduler
 		max_nr="$(cat /sys/block/nullb1/queue/nr_requests)"
 		for ((nr = 4; nr <= max_nr; nr++)); do
 			echo "$nr" > /sys/block/nullb1/queue/nr_requests

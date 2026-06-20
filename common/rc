@@ -385,10 +385,7 @@ _test_dev_queue_set() {
 	      ${SYSFS_QUEUE_SAVED["$path"]-unset} == unset ]]; then
 		SYSFS_QUEUE_SAVED["$path"]="$(_test_dev_queue_get "$1")"
 	fi
-	if ! echo "$2" >"$path"; then
-		echo "echo $2 > $path failed"
-		return 1
-	fi
+	_write_queue_sched "$2" "$path"
 }
 
 _test_dev_set_scheduler() {

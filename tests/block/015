@@ -42,7 +42,7 @@ test() {
 
 	for sched in $(_io_schedulers "$faultb"); do
 		echo "Testing $sched" >> "$FULL"
-		echo "$sched" > /sys/block/"$faultb"/queue/scheduler
+		_write_queue_sched "$sched" /sys/block/"$faultb"/queue/scheduler
 		dd if=/dev/"$faultb" of=/dev/null bs=4K count=$((512 * 1024)) \
 			iflag=direct status=none
 	done

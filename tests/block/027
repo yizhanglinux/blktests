@@ -51,7 +51,7 @@ scsi_debug_stress_remove() {
 		# shellcheck disable=SC2207
 		scheds=($(sed 's/[][]//g' "$queue_path/scheduler"))
 		sched_idx=$((cnt % ${#scheds[@]}))
-		echo "${scheds[$sched_idx]}" > "$queue_path/scheduler"
+		_write_queue_sched "${scheds[$sched_idx]}" "$queue_path/scheduler"
 		echo "$cnt" > "$queue_path/../device/queue_depth"
 		((cnt++))
 	done

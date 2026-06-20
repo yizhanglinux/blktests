@@ -21,7 +21,7 @@ toggle_iosched() {
 
 	while true; do
 		for iosched in none mq-deadline; do
-			echo "${iosched}" > "/sys/class/block/$(basename "$zdev")/queue/scheduler"
+			_write_queue_sched "${iosched}" "/sys/class/block/$(basename "$zdev")/queue/scheduler"
 			sleep .1
 		done
 	done
