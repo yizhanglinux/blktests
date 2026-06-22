@@ -385,6 +385,28 @@ _output_test_run() {
 	fi
 }
 
+# Writes to queue/scheduler may fail with -EBUSY when udevd does concurrent
+# write. Retry the writes when -EBUSY is returned.
+_write_queue_sched() {
+	local value="$1"
+	local path="$2"
+	local log
+	local i
+
+	for ((i = 0; i < 5; i++)); do
+		if log=$({ echo "$value" > "$path" ;} 2>&1); then
+			break
+		fi
+		if [[ ! $log =~ "Device or resource busy" ]]; then
+			echo "$log"
+		fi
+	done
+	if ((i > 5)); then
+		echo "echo ${value} > ${path} failed"
+		return 1
+	fi
+}
+
 _register_test_cleanup() {
 	TEST_CLEANUP=$1
 }
@@ -402,7 +424,7 @@ _cleanup() {
 	local key value
 	for key in "${!SYSFS_QUEUE_SAVED[@]}"; do
 		value="${SYSFS_QUEUE_SAVED["$key"]}"
-		echo "$value" >"${key}"
+		_write_queue_sched "$value" "${key}"
 		unset "SYSFS_QUEUE_SAVED[$key]"
 	done
 
