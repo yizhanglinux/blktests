@@ -1,0 +1,59 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2026 0wnerD1ed
+#
+# Regression test for commit df308a145856 ("block: fix aligning of bounced dio
+# read bios"). Trigger a partial XFS direct read that used to unpin one user
+# page twice.
+
+. tests/block/rc
+. common/null_blk
+. common/xfs
+
+DESCRIPTION="test partial bounced direct read bvec alignment"
+QUICK=1
+
+requires() {
+	_have_xfs
+	_have_null_blk
+	_have_kernel_option IO_URING
+	_have_kernel_option PROC_PAGE_MONITOR
+}
+
+test() {
+	local block_size
+	local mount_dir="${TMPDIR}/mnt"
+	local test_file="${mount_dir}/target"
+
+	echo "Running ${TEST_NAME}"
+
+	if ! _configure_null_blk nullb1 size=300 memory_backed=1 power=1; then
+		echo "configuring null_blk failed"
+		return 1
+	fi
+	if ! echo 1 > /sys/block/nullb1/queue/stable_writes; then
+		SKIP_REASONS+=("null_blk does not support stable writes")
+		_exit_null_blk
+		return
+	fi
+	if ! _xfs_mkfs_and_mount /dev/nullb1 "${mount_dir}" \
+		>>"${FULL}" 2>&1; then
+		echo "failed to create and mount XFS"
+		_exit_null_blk
+		return
+	fi
+	dd if=/dev/zero of="${test_file}" bs=1M count=1 conv=fsync \
+		status=none
+	block_size=$(blockdev --getss /dev/nullb1)
+
+	_io_uring_enable
+	if ! src/bio-bounce-read "${block_size}" "${test_file}"; then
+		echo "bio-bounce-read helper failed"
+	fi
+	_io_uring_restore
+
+	umount "${mount_dir}" >>"${FULL}" 2>&1
+	rm -rf "${mount_dir}"
+	_exit_null_blk
+	echo "Test complete"
+}
