@@ -100,16 +100,18 @@ _require_test_dev_support_sed() {
 }
 
 _require_nvme_cli_auth() {
-	if ! nvme gen-dhchap-key --nqn nvmf-test-subsys > /dev/null 2>&1 ; then
-		SKIP_REASONS+=("nvme gen-dhchap-key command missing")
+	_nvme_kxchap_cmd_style
+	if [[ "$_nvme_kxchap_style" == "none" ]]; then
+		SKIP_REASONS+=("nvme gen-dhchap-key / nvme keys gen-kxchap command missing")
 		return 1
 	fi
 	return 0
 }
 
 _require_nvme_cli_tls() {
-	if ! nvme gen-tls-key --subsysnqn nvmf-test-subsys > /dev/null 2>&1; then
-		SKIP_REASONS+=("nvme gen-tls-key command missing")
+	_nvme_tls_cmd_style
+	if [[ "$_nvme_tls_style" == "none" ]]; then
+		SKIP_REASONS+=("nvme gen-tls-key / nvme keys gen-tls command missing")
 		return 1
 	fi
 	return 0
