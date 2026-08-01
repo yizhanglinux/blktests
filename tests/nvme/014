@@ -46,7 +46,7 @@ test() {
 	nvme flush "/dev/${ns}" &> "${FULL}"
 	ret=$?
 	if [[ ${ret} -ne 0 ]]; then
-		echo "FAIL: nvme flush return error code: $(ret)"
+		echo "FAIL: nvme flush return error code: ${ret}"
 	fi
 
 	_nvme_disconnect_subsys
