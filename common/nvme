@@ -37,6 +37,60 @@ _nvme_def_file_path() {
 	echo "${TMPDIR}/img"
 }
 
+_nvme_kxchap_cmd_style() {
+	if [[ -z "${_nvme_kxchap_style:-}" ]]; then
+		if nvme keys gen-kxchap --nqn nvmf-test-subsys > /dev/null 2>&1; then
+			_nvme_kxchap_style="3"
+		elif nvme gen-dhchap-key --nqn nvmf-test-subsys > /dev/null 2>&1; then
+			_nvme_kxchap_style="2"
+		else
+			_nvme_kxchap_style="none"
+		fi
+	fi
+}
+
+_nvme_tls_cmd_style() {
+	if [[ -z "${_nvme_tls_style:-}" ]]; then
+		if nvme keys gen-tls --subsysnqn nvmf-test-subsys > /dev/null 2>&1; then
+			_nvme_tls_style="3"
+		elif nvme gen-tls-key --subsysnqn nvmf-test-subsys > /dev/null 2>&1; then
+			_nvme_tls_style="2"
+		else
+			_nvme_tls_style="none"
+		fi
+	fi
+}
+
+_nvme_gen_kxchap_key() {
+	_nvme_kxchap_cmd_style
+	case "$_nvme_kxchap_style" in
+	3)
+		nvme keys gen-kxchap "$@"
+		;;
+	2)
+		nvme gen-dhchap-key "$@"
+		;;
+	*)
+		return 1
+		;;
+	esac
+}
+
+_nvme_gen_tls_key() {
+	_nvme_tls_cmd_style
+	case "$_nvme_tls_style" in
+	3)
+		nvme keys gen-tls "$@"
+		;;
+	2)
+		nvme gen-tls-key "$@"
+		;;
+	*)
+		return 1
+		;;
+	esac
+}
+
 _require_nvme_trtype() {
 	local trtype
 	for trtype in "$@"; do

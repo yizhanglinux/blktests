@@ -34,9 +34,9 @@ test() {
 
 	_systemctl_start tlshd
 
-	hostkey=$(nvme gen-dhchap-key -m 1 -n "${def_hostnqn}" 2> /dev/null)
+	hostkey=$(_nvme_gen_kxchap_key --hmac 1 --nqn "${def_hostnqn}" 2> /dev/null)
 	if [ -z "$hostkey" ] ; then
-		echo "nvme gen-dhchap-key failed"
+		echo "key generation failed"
 		_systemctl_stop
 		return 1
 	fi
@@ -76,9 +76,9 @@ test() {
 
 	_nvme_disconnect_subsys
 
-	hostkey=$(nvme gen-dhchap-key -m 2 -n "${def_hostnqn}" 2> /dev/null)
+	hostkey=$(_nvme_gen_kxchap_key --hmac 2 --nqn "${def_hostnqn}" 2> /dev/null)
 	if [ -z "$hostkey" ] ; then
-		echo "nvme gen-dhchap-key failed"
+		echo "key generation failed"
 		_systemctl_stop
 		return 1
 	fi
