@@ -1,0 +1,34 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2026 0wnerD1ed
+#
+# Exercise the case where alignment removes the only extracted bvec. This
+# caught an out-of-bounds access in an intermediate revision of the patch that
+# became df308a145856 ("block: fix aligning of bounced dio read bios").
+
+. tests/block/rc
+. common/null_blk
+
+DESCRIPTION="test direct I/O full-trim bvec alignment"
+QUICK=1
+CAN_BE_ZONED=1
+
+requires() {
+	_have_null_blk
+}
+
+test() {
+	echo "Running ${TEST_NAME}"
+
+	if ! _configure_null_blk nullb1 power=1; then
+		echo "configuring null_blk failed"
+		return 1
+	fi
+
+	if ! src/bio-full-trim /dev/nullb1; then
+		echo "bio-full-trim helper failed"
+	fi
+
+	_exit_null_blk
+	echo "Test complete"
+}
