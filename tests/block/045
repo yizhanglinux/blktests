@@ -25,7 +25,8 @@ test() {
 		return 1
 	fi
 
-	if ! src/bio-full-trim /dev/nullb1; then
+	if ! src/bio-full-trim /dev/nullb1 \
+	     "$(< /sys/block/nullb1/queue/dma_alignment)"; then
 		echo "bio-full-trim helper failed"
 	fi
 
