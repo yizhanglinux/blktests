@@ -27,6 +27,19 @@ _delayed_nvme_reconnect_ctrl() {
 	_nvme_connect_subsys
 }
 
+_check_nvme_core_ref_count() {
+	local refcnt i
+
+	for ((i = 0; i < 10; i++)); do
+		refcnt=$(_module_use_count nvme_core)
+		if [ "$refcnt" == "" ] || [ "$refcnt" -eq "$refcnt_orig" ]; then
+			return 0
+		fi
+		sleep 1
+	done
+	return 1
+}
+
 test() {
 	echo "Running ${TEST_NAME}"
 
@@ -98,8 +111,7 @@ test() {
 	if ! _nvmf_wait_for_state "${def_subsysnqn}" "live" ; then
 		echo "subsystem did not return"
 	fi
-	refcnt=$(_module_use_count nvme_core)
-	if [ "$refcnt" != "" ] && [ "$refcnt" -ne "$refcnt_orig" ]; then
+	if ! _check_nvme_core_ref_count; then
 		echo "module refcount not as original"
 	fi
 
