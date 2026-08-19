@@ -30,6 +30,7 @@ device_requires() {
 test_device() {
 	echo "Running ${TEST_NAME}"
 
+	local fio_pid
 	local sysfs
 	local attr
 	local m
@@ -38,8 +39,11 @@ test_device() {
 	sysfs="/sys/bus/pci/devices/${pdev}"
 
 	# start fio job
+	set -m
 	_run_fio_rand_io --filename="$TEST_DEV" \
 		--group_reporting --time_based --runtime=1d &> /dev/null &
+	set +m
+	fio_pid=$!
 
 	sleep 5
 
@@ -54,7 +58,7 @@ test_device() {
 		fi
 	done
 
-	{ kill $!; wait; } &> /dev/null
+	{ kill -- -"${fio_pid}"; wait; } &> /dev/null
 
 	echo 1 > /sys/bus/pci/rescan
 
