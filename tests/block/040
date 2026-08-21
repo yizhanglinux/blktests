@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-License-Identifier: GPL-2.0
+# SPDX-License-Identifier: GPL-3.0+
 # Copyright 2025 Ming Lei <ming.lei@redhat.com>
 #
 # Most of code is copied from block/029.
