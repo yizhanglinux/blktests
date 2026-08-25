@@ -1,0 +1,64 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2026 Tao Cui <cuitao@kylinos.cn>
+#
+# Regression test for removing a cgroup while IO is still queued in the
+# blk-throttle queue.  The queued bios must be flushed without any
+# blk-cgroup or blk-throttle warning.
+
+. tests/throtl/rc
+
+DESCRIPTION="queued throttled IO vs. cgroup removal must not warn"
+QUICK=1
+
+set_conditions() {
+	_set_throtl_blkdev_type "$@"
+}
+
+test() {
+	echo "Running ${TEST_NAME}"
+
+	if ! _set_up_throtl; then
+		return 1
+	fi
+
+	# Throttle reads so the bio queues.
+	_throtl_set_limits rbps=4096
+
+	(
+		echo "$BASHPID" > "$CGROUP2_DIR/$THROTL_DIR/cgroup.procs"
+		exec dd if=/dev/"$THROTL_DEV" of=/dev/null bs=1M count=1 status=none
+	) &
+	local io_pid=$!
+	sleep 2
+
+	# Move the reader to the cgroup2 root so the throttle cgroup can be
+	# removed while its bio is still queued.  $CGROUP2_DIR has +io in its
+	# subtree_control and so cannot hold processes.
+	echo "$io_pid" > "$(_cgroup2_base_dir)/cgroup.procs"
+
+	# Remove the throttle cgroup while its bio is still queued.
+	rmdir "$CGROUP2_DIR/$THROTL_DIR"
+	sleep 3
+
+	kill "$io_pid" 2>/dev/null
+	wait "$io_pid" 2>/dev/null
+
+	# $THROTL_DIR is already gone; tear down the rest by hand.
+	if [[ $THROTL_CLEAR_CGROUP2_DIR_CONTROL_IO == true ]]; then
+		echo "-io" > "$CGROUP2_DIR/cgroup.subtree_control"
+	fi
+	if [[ $THROTL_CLEAR_BASE_SUBTREE_CONTROL_IO == true ]]; then
+		echo "-io" > "$(_cgroup2_base_dir)/cgroup.subtree_control"
+	fi
+	_exit_cgroup2
+	_exit_throtl_blkdev
+
+	if _dmesg_since_test_start | grep -qE "WARNING:.*(blk-cgroup|blk-throttle)"; then
+		echo "WARNING: blkcg/blk-throttle warning on cgroup removal with queued IO"
+		_dmesg_since_test_start | grep -A 12 -E "WARNING:.*(blk-cgroup|blk-throttle)" \
+			>> "$FULL"
+	fi
+
+	echo "Test complete"
+}
