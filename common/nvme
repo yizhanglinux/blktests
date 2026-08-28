@@ -354,7 +354,7 @@ _nvme_disconnect_ctrl() {
 	if [[ -d "${ctrl_dir}" ]]; then
 		local ret
 
-		nvme disconnect --device "${ctrl}" &> "${FULL}"
+		nvme disconnect --device "${ctrl}" &>> "${FULL}"
 		ret=$?
 		if [[ ${ret} -ne 0 ]]; then
 			echo "FAIL: nvme disconnect returned error code: ${ret}"
@@ -638,7 +638,7 @@ _nvme_disconnect_subsys() {
 		esac
 	done
 
-	nvme disconnect --nqn "${subsysnqn}" &> "${FULL}"
+	nvme disconnect --nqn "${subsysnqn}" &>> "${FULL}"
 	ret=$?
 	if [[ ${ret} -ne 0 ]]; then
 		echo "FAIL: nvme disconnect returned error code: ${ret}"
