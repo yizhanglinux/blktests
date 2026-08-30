@@ -116,7 +116,7 @@ _init_scsi_debug() {
 
 	if (( RUN_FOR_ZONED )); then
 		if ! _have_module_param scsi_debug zbc; then
-			return
+			return 1
 		fi
 		args+=(zbc=host-managed zone_nr_conv=0)
 	fi
