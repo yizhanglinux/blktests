@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: GPL-3.0+
 # Copyright (C) 2025 Western Digital Corporation or its affiliates.
 #
-# Test skip in device_requries() for test_device_array()
+# Test skip in device_requires() for test_device_array()
 
 . tests/meta/rc
 
-DESCRIPTION="skip test_device_array() in device_requries()"
+DESCRIPTION="skip test_device_array() in device_requires()"
 
 device_requires() {
 	SKIP_REASONS+=("(╯°□°)╯︵ $TEST_DEV ┻━┻")

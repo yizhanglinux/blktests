@@ -74,9 +74,9 @@ test() {
 	# reset io_uring setting before exits test
 	_io_uring_restore
 
-	if [ $fio_status != 0 ]; then
+	if [ "$fio_status" -ne 0 ]; then
 		echo "Failed (fio status = $fio_status)"
-		return
+		return 1
 	fi
 	local iops1 iops2 rest
 	read -r iops1 iops2 rest \
