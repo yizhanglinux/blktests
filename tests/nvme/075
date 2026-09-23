@@ -1,0 +1,59 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2026 Yao Sang <sangyao@kylinos.cn>
+#
+# Regression test for kernel commit 72ece656abd4 ("nvme: fix command effects
+# log lifetime for multipath heads").
+
+. tests/nvme/rc
+
+DESCRIPTION="test NVMe multipath command effects log lifetime"
+QUICK=1
+CHECK_DMESG=1
+
+requires() {
+	_nvme_requires
+	_have_loop
+	_have_module_param_value nvme_core multipath Y
+	_have_kernel_options KASAN
+}
+
+set_conditions() {
+	_set_nvme_trtype "$@"
+}
+
+test() {
+	echo "Running ${TEST_NAME}"
+
+	local first_ctrl
+	local ngdev
+	local ns
+	local nsid
+	local -a ports
+
+	_setup_nvmet
+	_nvmet_target_setup --ports 2
+
+	_get_nvmet_ports "${def_subsysnqn}" ports
+
+	_nvme_connect_subsys --port "${ports[0]}"
+	first_ctrl=$(_find_nvme_dev "${def_subsysnqn}")
+
+	_nvme_connect_subsys --port "${ports[1]}"
+
+	ns=$(_find_nvme_ns "${def_subsys_uuid}")
+	nsid=$(cat "/sys/block/${ns}/nsid")
+	ngdev="${ns/nvme/ng}"
+
+	_nvme_disconnect_ctrl "${first_ctrl}"
+
+	if ! nvme io-passthru "/dev/${ngdev}" --opcode 0 \
+		--namespace-id "${nsid}" >> "${FULL}" 2>&1; then
+		echo "io-passthru failed"
+	fi
+
+	_nvme_disconnect_subsys >> "${FULL}" 2>&1
+	_nvmet_target_cleanup
+
+	echo "Test complete"
+}
