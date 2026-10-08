@@ -31,6 +31,7 @@ C_TARGETS := \
 	zbdioctl
 
 C_URING_TARGETS := metadata \
+	metadata-iopoll \
 	nvme-passthru-admin-uring
 C_UBLK_TARGETS := miniublk
 

@@ -1,0 +1,56 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2026 Yang Xiuwei <yangxiuwei@kylinos.cn>
+#
+# IOPOLL combined with a PI attribute used to oops in bio_poll(). The kernel
+# rejects that combination with -EOPNOTSUPP.
+#
+# Regression test for kernel commit 2a42e6fe1293 ("block: reject polled dio
+# with user integrity metadata").
+#
+# Kernels without IORING_FEAT_RW_ATTR are skipped. Kernels that advertise the
+# feature but lack 2a42e6fe1293 oops in bio_poll().
+
+. tests/block/rc
+. common/scsi_debug
+
+DESCRIPTION="iopoll dio with user PI metadata returns -EOPNOTSUPP"
+QUICK=1
+
+requires() {
+	_have_kernel_option IO_URING
+	_have_kernel_option BLK_DEV_INTEGRITY
+	_have_loadable_scsi_debug
+	_have_src_program metadata-iopoll
+}
+
+test() {
+	echo "Running ${TEST_NAME}"
+
+	if ! _init_scsi_debug dif=1 dix=1 dev_size_mb=64 sector_size=512 \
+			submit_queues=2 poll_queues=1; then
+		return 1
+	fi
+
+	local dev="${SCSI_DEBUG_DEVICES[0]}"
+
+	if [[ "$(<"/sys/block/${dev}/queue/io_poll")" != 1 ]]; then
+		SKIP_REASONS+=("scsi_debug has no poll queue")
+		_exit_scsi_debug
+		return
+	fi
+
+	src/metadata-iopoll "/dev/${dev}" >>"$FULL" 2>&1
+	local rc=$?
+
+	_exit_scsi_debug
+	if ((rc == 2)); then
+		SKIP_REASONS+=("io_uring PI attributes not supported")
+		return
+	fi
+	if ((rc)); then
+		echo "metadata-iopoll failed"
+		return 1
+	fi
+	echo "Test complete"
+}
