@@ -1,0 +1,64 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2026 Tal Zussman
+#
+# Issue partial O_DIRECT writes from a hugetlb mapping to a block device with
+# a 64K logical block size and check that no huge pages leak. The bio of such
+# a write is trimmed down to a block boundary, and the pages it drops each
+# hold their own pin when a large folio backs the buffer. If the trim
+# releases at most one of them, whether it drops a whole bvec or shrinks one,
+# the huge page never returns to the pool.
+#
+# Regression test for patch "block: unpin all pages of a bvec in
+# bio_iov_iter_align_down()".
+
+. tests/block/rc
+. common/null_blk
+
+DESCRIPTION="check for pinned page leaks from trimmed direct writes"
+QUICK=1
+
+requires() {
+	_have_null_blk
+	_have_kernel_option TRANSPARENT_HUGEPAGE
+	_have_kernel_option HUGETLBFS
+	_have_src_program bio-trim-pin-leak
+	if (( $(_get_page_size) > 16384 )); then
+		SKIP_REASONS+=("a 64K block size is below four pages")
+		return 1
+	fi
+}
+
+test() {
+	echo "Running ${TEST_NAME}"
+
+	local nr_hugepages ret
+
+	if ! _configure_null_blk nullb1 blocksize=65536 memory_backed=1 \
+	     size=64 power=1; then
+		SKIP_REASONS+=("null_blk does not support a 64K block size")
+		return
+	fi
+
+	nr_hugepages=$(cat /proc/sys/vm/nr_hugepages)
+	echo $((nr_hugepages + 40)) > /proc/sys/vm/nr_hugepages
+
+	src/bio-trim-pin-leak /dev/nullb1 16 >>"${FULL}" 2>&1
+	ret=$?
+
+	echo "${nr_hugepages}" > /proc/sys/vm/nr_hugepages
+	_exit_null_blk
+
+	case $ret in
+	0)
+		;;
+	2)
+		echo "huge pages leaked by trimmed direct writes"
+		;;
+	*)
+		echo "bio-trim-pin-leak helper failed"
+		;;
+	esac
+
+	echo "Test complete"
+}

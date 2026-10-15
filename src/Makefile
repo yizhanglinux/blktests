@@ -16,6 +16,7 @@ HAVE_C_DEF = $(shell if printf '$(H)include <%s>\n$(H)ifdef %s\nHAVE_%s\n$(H)end
 C_TARGETS := \
 	bio-bounce-read \
 	bio-full-trim \
+	bio-trim-pin-leak \
 	dio-offsets \
 	loblksize \
 	loop_change_fd \

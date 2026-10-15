@@ -1,5 +1,6 @@
 /bio-bounce-read
 /bio-full-trim
+/bio-trim-pin-leak
 /dio-fallback-race
 /dio-offsets
 /discontiguous-io
