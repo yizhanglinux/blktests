@@ -1,0 +1,57 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2026 Tal Zussman
+#
+# Race partial O_DIRECT writes to a block device against BLKBSZSET. A direct
+# write that completes only partially finishes as a buffered write through the
+# direct I/O fallback, which has to hold i_rwsem like the plain buffered write
+# path so that it does not race set_blocksize() raising the mapping's minimum
+# folio order. Without it, the fallback adds a folio that is too small for the
+# mapping, which a CONFIG_DEBUG_VM kernel reports as a BUG.
+#
+# Regression test for patch "block: take i_rwsem for the direct I/O write
+# fallback".
+
+. tests/block/rc
+. common/null_blk
+
+DESCRIPTION="race the direct I/O write fallback against BLKBSZSET"
+TIMED=1
+
+requires() {
+	_have_null_blk
+	_have_kernel_option TRANSPARENT_HUGEPAGE
+	_have_kernel_option DEBUG_VM
+	_have_src_program dio-fallback-race
+	if (( $(_get_page_size) >= 65536 )); then
+		SKIP_REASONS+=("a 64K block size is not above the page size")
+		return 1
+	fi
+}
+
+test() {
+	echo "Running ${TEST_NAME}"
+
+	# the race hits about once a minute on an unfixed kernel
+	: "${TIMEOUT:=60}"
+
+	if ! _configure_null_blk nullb1 blocksize=512 memory_backed=1 \
+	     size=64 power=1; then
+		echo "configuring null_blk failed"
+		return 1
+	fi
+
+	if ! blockdev --setbsz 65536 /dev/nullb1; then
+		SKIP_REASONS+=("kernel does not support a 64K block size")
+		_exit_null_blk
+		return
+	fi
+
+	if ! src/dio-fallback-race /dev/nullb1 "${TIMEOUT}" >>"${FULL}" 2>&1; then
+		echo "dio-fallback-race helper failed"
+	fi
+
+	_exit_null_blk
+
+	echo "Test complete"
+}
