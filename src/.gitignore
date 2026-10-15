@@ -12,6 +12,7 @@
 /mount_clear_sock
 /nbdsetsize
 /openclose
+/splice-race
 /sg/dxfer-from-dev
 /sg/syzkaller1
 /zbdioctl
