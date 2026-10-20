@@ -19,7 +19,6 @@ C_TARGETS := \
 	bio-trim-pin-leak \
 	dio-offsets \
 	loblksize \
-	loop_change_fd \
 	loop_get_status_null \
 	mmap-loss \
 	mount_clear_sock \

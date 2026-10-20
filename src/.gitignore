@@ -5,7 +5,6 @@
 /dio-offsets
 /discontiguous-io
 /loblksize
-/loop_change_fd
 /loop_get_status_null
 /metadata
 /metadata-iopoll
