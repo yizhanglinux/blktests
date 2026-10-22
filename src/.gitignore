@@ -22,3 +22,4 @@
 /nvme-passthru-admin-uring
 /nvme-delay-ioctl
 /nvme-sentinel-read
+/nvme-zone-report

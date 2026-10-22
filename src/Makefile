@@ -25,6 +25,7 @@ C_TARGETS := \
 	nvme-delay-ioctl \
 	nvme-passthrough-meta \
 	nvme-sentinel-read \
+	nvme-zone-report \
 	ioctl-lbmd-query \
 	nbdsetsize \
 	openclose \

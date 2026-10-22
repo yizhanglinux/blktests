@@ -1,0 +1,68 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2026 Andrea Parri
+#
+# Check that NVMe target zone reports are fully initialized and that their
+# transfer length matches NUMD.
+#
+# Regression test for patch "nvmet: zns: don't leak stale memory in zone
+# management receive".
+
+. tests/nvme/rc
+. common/null_blk
+
+DESCRIPTION="check NVMe target zone report initialization and length"
+QUICK=1
+
+requires() {
+	_nvme_requires
+	_have_loop
+	_require_kernel_nvme_target
+	_have_null_blk
+	_have_kernel_options BLK_DEV_ZONED
+	_have_src_program nvme-zone-report
+
+	# RDMA defaults to PAGE_SIZE bytes of inline data. The helper's
+	# 8 KiB preparatory write must exceed that limit.
+	if [[ "$nvme_trtype" == "rdma" ]]; then
+		_page_size_equals 4096
+	fi
+}
+
+set_conditions() {
+	_set_nvme_trtype "$@"
+}
+
+test() {
+	echo "Running ${TEST_NAME}"
+
+	local block_size dev last_sector ret sectors slba zone_sectors
+
+	_setup_nvmet
+	_register_test_cleanup _cleanup_nvmet_zoned_target
+	if ! _nvmet_zoned_target_setup; then
+		return 1
+	fi
+	dev="/dev/$(_find_nvme_ns "$def_subsys_uuid")"
+
+	sectors=$(cat /sys/block/nullb1/size)
+	zone_sectors=$(cat /sys/block/nullb1/queue/chunk_sectors)
+	block_size=$(cat /sys/block/nullb1/queue/logical_block_size)
+	last_sector=$(((sectors - 1) / zone_sectors * zone_sectors))
+	slba=$((last_sector * 512 / block_size))
+
+	src/nvme-zone-report "$dev" "$slba" >>"$FULL" 2>&1
+	ret=$?
+	case $ret in
+	0) ;;
+	1) echo "zone report contained stale data" ;;
+	*) echo "zone report checker failed" ;;
+	esac
+
+	_check_zone_report "$dev" 4096 1023 0
+	_check_zone_report "$dev" 8192 1023 15
+
+	_nvmet_zoned_target_cleanup
+
+	echo "Test complete"
+}
