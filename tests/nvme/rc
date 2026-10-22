@@ -408,6 +408,64 @@ _nvmet_passthru_target_cleanup() {
 	_remove_nvmet_host "${def_hostnqn}"
 }
 
+# Export a zoned null_blk device as a namespace of the default subsystem and
+# connect to it. Callers must source common/null_blk.
+_nvmet_zoned_target_setup() {
+	if ! _configure_null_blk nullb1 blocksize=512 size=1024 zoned=1 \
+	     zone_size=1 power=1 >>"$FULL" 2>&1; then
+		echo "could not configure zoned null_blk device"
+		return 1
+	fi
+
+	_nvmet_target_setup --blkdev none
+	_create_nvmet_ns --blkdev /dev/nullb1 --uuid "$def_subsys_uuid" \
+		>/dev/null
+	_nvme_connect_subsys
+}
+
+_nvmet_zoned_target_cleanup() {
+	_nvme_disconnect_subsys
+	_nvmet_target_cleanup
+	_exit_null_blk
+}
+
+# Test cleanup handler to register with _nvmet_zoned_target_setup().
+_cleanup_nvmet_zoned_target() {
+	_cleanup_nvmet
+	_exit_null_blk
+}
+
+# Issue a partial zone report from zone 0 of namespace device $1 with a
+# $2-byte data buffer and NUMD $3, and check that it completes with status
+# code $4, or succeeds if $4 is 0.
+_check_zone_report() {
+	local dev=$1 data_len=$2 numd=$3 expected=$4 desc err rc status
+
+	desc="zone report with $data_len bytes and NUMD $numd"
+	err=$(nvme io-passthru "$dev" --namespace-id=1 --opcode=0x7a --read \
+		--data-len="$data_len" --cdw10=0 --cdw11=0 --cdw12="$numd" \
+		--cdw13=0x10000 2>&1 >/dev/null)
+	rc=$?
+	status=$(sed -n \
+		's/^NVMe status:.*(\(0x[[:xdigit:]][[:xdigit:]]*\)).*/\1/p' \
+		<<<"$err")
+	printf '%s: exit=%d status=%s\n' "$desc" "$rc" "${status:-none}" \
+		>>"$FULL"
+
+	if ((expected == 0)); then
+		if ((rc != 0)); then
+			echo "$desc failed"
+		fi
+	elif ((rc == 0)); then
+		echo "$desc was not rejected"
+	elif [[ -z "$status" ]]; then
+		echo "$desc returned no NVMe status"
+	elif (((status & 0x7ff) != expected)); then
+		printf '%s returned status %s, expected %#x\n' "$desc" \
+			"$status" "$expected"
+	fi
+}
+
 _discovery_genctr() {
 	local port=${1}
 
