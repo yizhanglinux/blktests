@@ -21,3 +21,4 @@
 /ioctl-lbmd-query
 /nvme-passthru-admin-uring
 /nvme-delay-ioctl
+/nvme-sentinel-read

@@ -1,0 +1,72 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2026 Andrea Parri
+#
+# Check that the NVMe target transfers no read data for a failed command.
+# The host buffer is filled with a sentinel, so any data the target sends
+# shows up as changed bytes.
+#
+# Regression test for patch "nvmet-fc: only send read data for successful
+# commands".
+
+. tests/nvme/rc
+
+DESCRIPTION="verify nvmet does not transfer data for failed reads"
+QUICK=1
+
+requires() {
+	_nvme_requires
+	_have_loop
+	_require_kernel_nvme_target
+	_have_src_program nvme-sentinel-read
+}
+
+set_conditions() {
+	_set_nvme_trtype "$@"
+}
+
+# Issue an Identify with CNS $2 to controller $1 and print the NVMe status
+# and the number of changed bytes in the 4096-byte data buffer.
+issue_identify() {
+	src/nvme-sentinel-read "$1" 0x06 "$2" 4096 2>>"$FULL"
+}
+
+test() {
+	echo "Running ${TEST_NAME}"
+
+	local changed ctrl status
+
+	_setup_nvmet
+	_nvmet_target_setup
+	_nvme_connect_subsys
+
+	ctrl=$(_find_nvme_dev "$def_subsysnqn")
+
+	# Identify Controller succeeds and must overwrite the sentinel.
+	if ! read -r status changed < <(issue_identify "/dev/$ctrl" 0x01); then
+		echo "successful Identify could not be issued"
+	else
+		echo "cns=0x01 status=$status changed=$changed" >>"$FULL"
+		if ((status != 0 || changed == 0)); then
+			echo "successful Identify returned status $status with $changed bytes"
+		fi
+	fi
+
+	# An unsupported CNS fails and must leave the sentinel intact.
+	if ! read -r status changed < <(issue_identify "/dev/$ctrl" 0xff); then
+		echo "failed Identify could not be issued"
+	else
+		echo "cns=0xff status=$status changed=$changed" >>"$FULL"
+		if (((status & 0x7ff) != 2)); then
+			echo "failed Identify returned status $status, expected 0x2"
+		fi
+		if ((changed != 0)); then
+			echo "failed Identify transferred data: $changed bytes changed"
+		fi
+	fi
+
+	_nvme_disconnect_subsys
+	_nvmet_target_cleanup
+
+	echo "Test complete"
+}
