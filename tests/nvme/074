@@ -1,0 +1,46 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0+
+# Copyright (C) 2026 Andrea Parri
+#
+# Check that the NVMe target rejects a zone report NUMD whose byte count
+# overflows a 32-bit value.
+#
+# Regression test for patch "nvmet: zns: reject a NUMD whose byte count wraps".
+
+. tests/nvme/rc
+. common/null_blk
+
+DESCRIPTION="reject an NVMe target zone report NUMD that wraps"
+QUICK=1
+
+requires() {
+	_nvme_requires
+	_have_loop
+	_require_kernel_nvme_target
+	_have_null_blk
+	_have_kernel_options BLK_DEV_ZONED
+}
+
+set_conditions() {
+	_set_nvme_trtype "$@"
+}
+
+test() {
+	echo "Running ${TEST_NAME}"
+
+	local dev
+
+	_setup_nvmet
+	_register_test_cleanup _cleanup_nvmet_zoned_target
+	if ! _nvmet_zoned_target_setup; then
+		return 1
+	fi
+	dev="/dev/$(_find_nvme_ns "$def_subsys_uuid")"
+
+	_check_zone_report "$dev" 64 15 0
+	_check_zone_report "$dev" 64 0x4000000f 2
+
+	_nvmet_zoned_target_cleanup
+
+	echo "Test complete"
+}
